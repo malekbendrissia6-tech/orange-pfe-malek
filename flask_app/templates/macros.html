@@ -1,0 +1,94 @@
+{#
+  macros.html - Composants Jinja2 reutilisables
+  Orange Tunisie - PFE 2026 - Malek Ben Drissia
+#}
+
+{# ===== PANNEAU FILTRES UNIFIE =====
+   Usage simple  : {{ filters_panel() }}
+   Avec ALGO     : {{ filters_panel(show_algo=true) }}
+   Avec info box : {% call filters_panel() %}<div>...</div>{% endcall %}
+   Chaque page definit applyFilters() et resetFilters() dans son propre JS.
+   Les selects ont toujours les memes IDs : f-periode, f-canal, f-famille,
+   f-categorie, f-cible (+ f-algo si show_algo).
+#}
+{% macro filters_panel(show_algo=false) %}
+<div class="filters-panel">
+  <div class="filters-title">FILTRES</div>
+
+  <div class="filter-group">
+    <label>PERIODE</label>
+    <select id="f-periode" class="form-select form-select-sm" onchange="applyFilters()">
+      <option value="">Toutes</option>
+    </select>
+  </div>
+
+  <div class="filter-group">
+    <label>CANAL</label>
+    <select id="f-canal" class="form-select form-select-sm" onchange="onFilterChange('f-canal')">
+      <option value="">Tous</option>
+    </select>
+  </div>
+
+  <div class="filter-group">
+    <label>FAMILLE</label>
+    <select id="f-famille" class="form-select form-select-sm" onchange="onFilterChange('f-famille')">
+      <option value="">Toutes</option>
+    </select>
+  </div>
+
+  <div class="filter-group">
+    <label>CATEGORIE</label>
+    <select id="f-categorie" class="form-select form-select-sm" onchange="onFilterChange('f-categorie')">
+      <option value="">Toutes</option>
+    </select>
+  </div>
+
+  <div class="filter-group">
+    <label>CIBLE</label>
+    <select id="f-cible" class="form-select form-select-sm" onchange="onFilterChange('f-cible')">
+      <option value="">Toutes</option>
+    </select>
+  </div>
+
+  {% if show_algo %}
+  <div class="filter-group">
+    <label>ALGORITHME</label>
+    <select id="f-algo" class="form-select form-select-sm" onchange="highlightAlgo(this.value)">
+      <option value="prophet">Prophet</option>
+      <option value="xgboost">XGBoost</option>
+      <option value="rf">Random Forest</option>
+      <option value="lstm">LSTM</option>
+    </select>
+  </div>
+  {% endif %}
+
+  {% if caller is defined %}{{ caller() }}{% endif %}
+
+  <button class="btn btn-outline-secondary w-100 btn-sm mt-2" onclick="resetFilters()">
+Reinitialiser
+  </button>
+</div>
+{% endmacro %}
+
+
+{# ===== BANNER IA ACCORDEON ===== #}
+{# Usage : {{ ai_banner('banner-dashboard-global', 'Titre', 'element-id') }} #}
+{% macro ai_banner(banner_id, title, content_id, default_open=True) %}
+<div class="global-ai-banner {% if not default_open %}collapsed{% endif %}"
+     id="{{ banner_id }}">
+  <div class="global-ai-banner-header"
+       onclick="toggleAiBanner('{{ banner_id }}')">
+    <div class="global-ai-banner-title">
+      {{ title }}
+    </div>
+    <span class="ai-toggle-icon">
+
+    </span>
+  </div>
+  <div class="global-ai-banner-content">
+    <p id="{{ content_id }}" class="global-ai-banner-text">
+      <em class="text-muted kpi-ai-loading">Analyse en cours...</em>
+    </p>
+  </div>
+</div>
+{% endmacro %}

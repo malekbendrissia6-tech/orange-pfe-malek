@@ -1,0 +1,427 @@
+{% extends "base.html" %}
+
+{% block title %}Analyse Produits - Orange Tunisie{% endblock %}
+
+{% block content %}
+<div class="dashboard-pro">
+
+  <!-- ===== HEADER GRADIENT ===== -->
+  <div class="dashboard-header">
+    <div class="d-flex align-items-center gap-3">
+      <div class="header-logo">O</div>
+      <div>
+        <p class="header-title">Analyse Produits</p>
+        <p class="header-subtitle">Orange Tunisie &bull; Quelle est l'offre la plus vendue ?</p>
+      </div>
+    </div>
+    <div class="d-flex align-items-center gap-2">
+      <span class="header-info-badge">
+CATALOGUE : {{ total_produits }} produits
+      </span>
+      <button class="header-action-btn" onclick="scrollToSynthese()" title="Aller a la synthese">Synthèse</button>
+      <button class="header-action-btn" onclick="location.reload()" title="Rafraichir">↺</button>
+    </div>
+  </div>
+
+  <!-- ===== 4 KPI CARDS ===== -->
+  <div class="kpis-grid">
+
+    <!-- KPI 1 : Total Produits -->
+    <div class="kpi-pro">
+      <div class="kpi-pro-content">
+        <p class="kpi-pro-label">Total Produits</p>
+        <p class="kpi-pro-value">{{ total_produits }}</p>
+        <p class="kpi-pro-sub">References catalogue</p>
+      </div>
+    </div>
+
+    <!-- KPI 2 : Types Techniques -->
+    <div class="kpi-pro">
+      <div class="kpi-pro-content">
+        <p class="kpi-pro-label">Types Techniques</p>
+        <p class="kpi-pro-value">{{ types_count }}</p>
+        <p class="kpi-pro-sub">SIM DATA, ADSL, FLYBOX...</p>
+      </div>
+    </div>
+
+    <!-- KPI 3 : Familles Business -->
+    <div class="kpi-pro">
+      <div class="kpi-pro-content">
+        <p class="kpi-pro-label">Familles Business</p>
+        <p class="kpi-pro-value">{{ familles_count }}</p>
+        <p class="kpi-pro-sub">Mobile / Fixe / Convergence</p>
+      </div>
+    </div>
+
+    <!-- KPI 4 : Top Produit -->
+    <div class="kpi-pro">
+      <div class="kpi-pro-content">
+        <p class="kpi-pro-label">Top Produit</p>
+        <p class="kpi-pro-value" style="font-size:15px; line-height:1.2;">
+          {{ top1_produit | truncate(22, true, '...') }}
+        </p>
+        <p class="kpi-pro-sub">
+          {{ "{:,}".format(top1_ventes).replace(',', ' ') }} ventes &bull; {{ top1_famille }}
+        </p>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ===== LAYOUT PRINCIPAL ===== -->
+  <div class="main-layout">
+
+    <!-- FILTRES -->
+    <div class="filters-panel">
+      <div class="filters-title">
+FILTRES
+      </div>
+
+      <div class="filter-group">
+        <label>TYPE D'OFFRE</label>
+        <select id="f-type" onchange="applyProdFilters()">
+          <option value="">Tous</option>
+          <option value="SIM DATA">SIM DATA</option>
+          <option value="SIM VOIX">SIM VOIX</option>
+          <option value="SIM FLYBOX">SIM FLYBOX</option>
+          <option value="ADSL">ADSL</option>
+          <option value="E-SIM">E-SIM</option>
+          <option value="NEW">NEW</option>
+        </select>
+      </div>
+
+      <div class="filter-group">
+        <label>FAMILLE</label>
+        <select id="f-famille-prod" onchange="applyProdFilters()">
+          <option value="">Toutes</option>
+          <option value="Mobile">Mobile</option>
+          <option value="Fixe et Internet">Fixe et Internet</option>
+          <option value="Convergence">Convergence</option>
+        </select>
+      </div>
+
+      <div class="filter-info-box"
+           style="border-left-color: var(--warning); background: var(--warning-bg);">
+        <p class="filter-info-box-label">Concentration</p>
+        <p class="filter-info-box-value" id="concentration-label">Calcul...</p>
+      </div>
+
+      <button class="btn-filter-reset" onclick="resetProdFilters()">
+Reinitialiser
+      </button>
+    </div>
+
+    <!-- GRILLE GRAPHIQUES -->
+    <div class="charts-grid">
+
+      <!-- GRAPH 1 : Top 10 Produits - TALL (col 1, rangees 1+2) -->
+      <div class="chart-card chart-tall">
+        <div class="chart-pro-title">
+TOP 10 PRODUITS LES PLUS VENDUS
+        </div>
+        <!-- Encadre Top 1 -->
+        <div id="top1-banner" style="display:none; background:linear-gradient(135deg,#FFF5EE,#FFE5D0);
+             border-left:3px solid #FF7900; border-radius:6px; padding:8px 10px; margin-bottom:8px;">
+          <div style="font-size:9px; color:#FF7900; font-weight:700; text-transform:uppercase;">
+N°1 — Offre dominante
+          </div>
+          <div id="top1-name" style="font-weight:700; font-size:13px; color:#1A1A1A; margin:3px 0 2px;"></div>
+          <div style="display:flex; gap:10px; font-size:10px;">
+            <span id="top1-ventes-detail" style="color:#FF7900; font-weight:600;"></span>
+            <span id="top1-pct-detail" style="color:#888;"></span>
+            <span id="top1-famille-badge"
+                  style="background:#FF7900; color:white; border-radius:3px; padding:1px 5px; font-size:9px; font-weight:700;"></span>
+          </div>
+        </div>
+        <div class="chart-canvas-wrap">
+          <canvas id="chart-top10"></canvas>
+        </div>
+      </div>
+
+      <!-- GRAPH 2 : Repartition Famille Donut (col 2, rangee 1) -->
+      <div class="chart-card">
+        <div class="chart-pro-title">
+REPARTITION FAMILLE
+        </div>
+        <div class="chart-canvas-wrap">
+          <canvas id="chart-famille-prod"></canvas>
+        </div>
+      </div>
+
+      <!-- GRAPH 3 : Type vs Famille - TALL (col 3, rangees 1+2) -->
+      <div class="chart-card chart-tall">
+        <div class="chart-pro-title">
+FAMILLE DE PRODUITS
+        </div>
+        <div style="overflow-y:auto; flex:1;">
+          {% if par_type %}
+            {% set type_colors = {
+              'Mobile': '#FF7900',
+              'Fixe et Internet': '#085EBD',
+              'Convergence': '#FFD200',
+              'Autres': '#9AA0A6'
+            } %}
+            {% for row in par_type %}
+            {% set fc = type_colors.get(row.famille, '#888') %}
+            <div style="display:flex; align-items:center; justify-content:space-between;
+                        padding:7px 8px; border-bottom:1px solid #F5F5F5;
+                        border-left:3px solid {{ fc }}; margin-bottom:3px;
+                        border-radius:0 4px 4px 0; background:#FAFAFA;">
+              <div>
+                <div style="font-size:11px; font-weight:600; color:#1A1A1A;">
+                  {{ row.type }}
+                </div>
+              </div>
+              <span style="background:{{ fc }}; color:white; font-size:9px; font-weight:700;
+                           padding:2px 7px; border-radius:3px; white-space:nowrap;">
+                {{ row.famille }}
+              </span>
+            </div>
+            {% endfor %}
+          {% else %}
+            <div class="text-center text-muted py-4">
+
+              <p class="mt-2 small">Donnees de types non disponibles.</p>
+            </div>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- GRAPH 4 : Ventes par Type (col 2, rangee 2) -->
+      <div class="chart-card">
+        <div class="chart-pro-title">
+VENTES PAR TYPE
+        </div>
+        <div class="chart-canvas-wrap">
+          <canvas id="chart-type-ventes"></canvas>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ===== SYNTHESE IA ===== -->
+  <div class="synthese-bar">
+    <span class="synthese-label">
+SYNTHESE
+    </span>
+    <p class="synthese-text" id="ai-produits-global">
+      <em style="color:#888; font-size:11px;">Analyse en cours...</em>
+    </p>
+    <button class="btn-synthese-refresh"
+            onclick="window.queueAI('/api/interpret/produits-global','ai-produits-global')">
+Rafraichir
+    </button>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+var _chartTop10   = null;
+var _chartFamille = null;
+var _chartType    = null;
+
+document.addEventListener('DOMContentLoaded', function () {
+    loadTop10();
+    loadFamilleProd();
+    loadTypeVentes();
+    window.queueAI('/api/interpret/produits-global', 'ai-produits-global');
+});
+
+// ===== TOP 10 PRODUITS =====
+function loadTop10() {
+    fetch('/api/top10-produits', { credentials: 'same-origin' })
+        .then(function (r) { return r.json(); })
+        .then(function (rows) {
+            if (!rows.length) return;
+
+            // Encadre Top 1
+            var top1 = rows[0];
+            var banner = document.getElementById('top1-banner');
+            if (banner) {
+                banner.style.display = 'block';
+                document.getElementById('top1-name').textContent = top1.produit || 'N/A';
+                document.getElementById('top1-ventes-detail').textContent =
+                    (top1.total_vendu || 0).toLocaleString('fr-FR') + ' ventes';
+                document.getElementById('top1-pct-detail').textContent =
+                    'Top 10 : ' + (top1.pourcentage || 0) + '%';
+                document.getElementById('top1-famille-badge').textContent = top1.famille || '';
+            }
+
+            // Concentration Top 3
+            var top3pct = rows.slice(0, 3).reduce(function (s, r) { return s + (r.pourcentage || 0); }, 0);
+            var conc = document.getElementById('concentration-label');
+            if (conc) conc.textContent = 'Top 3 = ' + top3pct.toFixed(1) + '%';
+
+            var ctx = document.getElementById('chart-top10');
+            if (!ctx) return;
+
+            var labels = rows.map(function (r) {
+                return r.produit && r.produit.length > 18 ? r.produit.slice(0, 18) + '...' : (r.produit || 'N/A');
+            });
+            var vals   = rows.map(function (r) { return r.total_vendu || 0; });
+            var pcts   = rows.map(function (r) { return r.pourcentage || 0; });
+            var colors = PALETTE.degradeColors(rows.length);
+
+            var barLabelsPlugin = {
+                id: 'barLabels',
+                afterDatasetsDraw: function (chart) {
+                    var c2 = chart.ctx;
+                    chart.data.datasets.forEach(function (dataset, di) {
+                        var meta = chart.getDatasetMeta(di);
+                        meta.data.forEach(function (bar, i) {
+                            var v = dataset.data[i];
+                            var p = pcts[i];
+                            var text = v.toLocaleString('fr-FR') + ' (' + p + '%)';
+                            c2.save();
+                            c2.font = '600 9px Inter,sans-serif';
+                            c2.fillStyle = '#1A1A1A';
+                            c2.textAlign = 'left';
+                            c2.textBaseline = 'middle';
+                            c2.fillText(text, bar.x + 4, bar.y);
+                            c2.restore();
+                        });
+                    });
+                }
+            };
+
+            if (_chartTop10) _chartTop10.destroy();
+            _chartTop10 = new Chart(ctx, {
+                type: 'bar',
+                plugins: [barLabelsPlugin],
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: vals, backgroundColor: colors,
+                        borderRadius: 4, barThickness: 20
+                    }]
+                },
+                options: {
+                    indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+                    layout: { padding: { right: 100 } },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: { callbacks: { label: function (ctx2) {
+                            return ' ' + (ctx2.parsed.x || 0).toLocaleString('fr-FR') +
+                                   ' ventes (' + pcts[ctx2.dataIndex] + '%)';
+                        }}}
+                    },
+                    scales: {
+                        x: { ticks: { color: '#888', font: { size: 9 } }, grid: { color: '#F0F0F0' } },
+                        y: { ticks: { color: '#333', font: { size: 9, weight: '600' } }, grid: { display: false } }
+                    }
+                }
+            });
+        })
+        .catch(function () {});
+}
+
+// ===== FAMILLE DONUT =====
+function loadFamilleProd() {
+    fetch('/api/repartition-famille', { credentials: 'same-origin' })
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+            if (!data.familles || !data.familles.length) return;
+            var ctx = document.getElementById('chart-famille-prod');
+            if (!ctx) return;
+            var total  = data.nb_ventes.reduce(function (a, b) { return a + b; }, 0);
+
+            var cp = { id: 'cp', afterDraw: function (chart) {
+                var w = chart.width, h = chart.height, c2 = chart.ctx;
+                c2.save();
+                c2.font = 'bold 12px Inter,sans-serif';
+                c2.fillStyle = '#1A1A1A'; c2.textAlign = 'center'; c2.textBaseline = 'middle';
+                c2.fillText(total.toLocaleString('fr-FR'), w/2, h/2 - 7);
+                c2.font = '9px Inter,sans-serif'; c2.fillStyle = '#888';
+                c2.fillText('contrats', w/2, h/2 + 8);
+                c2.restore();
+            }};
+
+            if (_chartFamille) _chartFamille.destroy();
+            _chartFamille = new Chart(ctx, {
+                type: 'doughnut', plugins: [cp],
+                data: {
+                    labels: data.familles,
+                    datasets: [{ data: data.nb_ventes,
+                        backgroundColor: data.familles.map(function (_, i) { return PALETTE.series[i % PALETTE.series.length]; }),
+                        borderWidth: 2, borderColor: '#fff' }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false, cutout: '60%',
+                    plugins: {
+                        legend: { position: 'bottom', labels: { font: { size: 9 }, padding: 6 } },
+                        tooltip: { callbacks: { label: function (ctx2) {
+                            return ' ' + data.familles[ctx2.dataIndex] + ' : ' +
+                                   data.pourcentages[ctx2.dataIndex] + '%';
+                        }}}
+                    }
+                }
+            });
+        })
+        .catch(function () {});
+}
+
+// ===== VENTES PAR TYPE (barres horiz) =====
+function loadTypeVentes() {
+    fetch('/api/top10-produits', { credentials: 'same-origin' })
+        .then(function (r) { return r.json(); })
+        .then(function (rows) {
+            if (!rows.length) return;
+
+            // Agréger par type
+            var typeMap = {};
+            rows.forEach(function (r) {
+                var t = r.type_produit || 'N/A';
+                typeMap[t] = (typeMap[t] || 0) + (r.total_vendu || 0);
+            });
+            var types  = Object.keys(typeMap);
+            var vals   = types.map(function (t) { return typeMap[t]; });
+            var maxV   = Math.max.apply(null, vals) || 1;
+            var pcts   = vals.map(function (v) { return Math.round(v / maxV * 100); });
+            var colors = PALETTE.degradeColors(types.length);
+
+            var ctx = document.getElementById('chart-type-ventes');
+            if (!ctx) return;
+
+            if (_chartType) _chartType.destroy();
+            _chartType = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: types,
+                    datasets: [{ data: vals, backgroundColor: colors, borderRadius: 4, barThickness: 16 }]
+                },
+                options: {
+                    indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { display: false },
+                        tooltip: { callbacks: { label: function (ctx2) {
+                            return ' ' + (ctx2.parsed.x || 0).toLocaleString('fr-FR') + ' ventes';
+                        }}}},
+                    scales: {
+                        x: { ticks: { color: '#888', font: { size: 9 } }, grid: { color: '#F0F0F0' } },
+                        y: { ticks: { color: '#333', font: { size: 9, weight: '600' } }, grid: { display: false } }
+                    }
+                }
+            });
+        })
+        .catch(function () {});
+}
+
+function scrollToSynthese() {
+    var el = document.querySelector('.synthese-bar');
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+function onProdFilterChange() {}
+function applyProdFilters() {
+    loadTop10();
+    loadFamilleProd();
+    loadTypeVentes();
+}
+function resetProdFilters() {
+    document.getElementById('f-type').value        = '';
+    document.getElementById('f-famille-prod').value = '';
+    applyProdFilters();
+}
+</script>
+{% endblock %}

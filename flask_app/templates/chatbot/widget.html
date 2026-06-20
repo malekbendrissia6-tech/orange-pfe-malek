@@ -1,0 +1,107 @@
+<!-- ===== CHATBOT ORANGE TUNISIE — widget.html ===== -->
+
+<!-- Bouton flottant -->
+<button id="chatbot-toggle-btn" class="chatbot-toggle" onclick="toggleChatbot()" title="ORYA - Assistant IA (Ctrl+K)"><span class="chatbot-toggle-label">ORYA</span></button>
+
+<!-- Sidebar chatbot -->
+<aside id="chatbot-sidebar" class="chatbot-sidebar">
+
+  <!-- En-tete -->
+  <div class="chatbot-header">
+    <div class="d-flex align-items-center gap-2">
+      <div class="chatbot-avatar">O</div>
+      <div>
+        <div style="font-weight:700; font-size:14px;">ORYA — Assistant Orange</div>
+        <div style="font-size:11px; opacity:0.85;">
+          <span class="status-dot"></span>En ligne &bull; Francais
+        </div>
+      </div>
+    </div>
+    <div class="d-flex gap-1 align-items-center">
+      <button class="cb-btn-icon" onclick="newConversation()" title="Nouvelle conversation">+</button>
+      <button class="cb-btn-icon" onclick="showHistory()" title="Historique">☰</button>
+      <button class="cb-btn-icon" onclick="exportCurrentPdf()" title="Exporter PDF">⬇</button>
+      <button class="cb-btn-icon" onclick="toggleChatbot()" title="Fermer">✕</button>
+    </div>
+  </div>
+
+  <!-- Zone messages -->
+  <div id="chatbot-messages" class="chatbot-messages">
+
+    <!-- Message d accueil -->
+    <div class="cb-msg cb-msg-assistant">
+      <div class="cb-avatar">O</div>
+      <div class="cb-content">
+        <p style="font-weight:600; margin-bottom:6px;">Bonjour, je suis votre Assistant Orange Tunisie.</p>
+        <p style="margin-bottom:6px;">Je peux vous aider a :</p>
+        <div class="cb-capabilities">
+          <div class="cb-cap-item"> Interroger les KPIs et donnees</div>
+          <div class="cb-cap-item"> Generer des graphiques dynamiques</div>
+          <div class="cb-cap-item"> Analyser vos performances</div>
+          <div class="cb-cap-item"> Expliquer l application</div>
+        </div>
+        <p style="margin-top:8px; margin-bottom:0;">Comment puis-je vous aider ?</p>
+      </div>
+    </div>
+
+    <!-- Suggestions rapides -->
+    <div class="cb-suggestions" id="cb-suggestions">
+      <p class="cb-sugg-label">Exemples de questions :</p>
+      <div class="cb-chips">
+        <button class="cb-chip" onclick="askQuestion('Qui est le top vendeur ?')">Top vendeur ?</button>
+        <button class="cb-chip" onclick="askQuestion('Montre les ventes par canal en graphique')">Graphique canaux</button>
+        <button class="cb-chip" onclick="askQuestion('Quel est le total des ventes ?')">Total ventes</button>
+        <button class="cb-chip" onclick="askQuestion('Quelle boutique a le plus de ventes ?')">Top boutique</button>
+        <button class="cb-chip" onclick="askQuestion('Comment activer le mode sombre ?')">Mode sombre ?</button>
+        <button class="cb-chip" onclick="askQuestion('Pourquoi le taux de realisation est bas ?')">Analyse objectifs</button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Typing indicator -->
+  <div id="chatbot-typing" class="cb-typing" style="display:none;">
+    <div class="cb-dots"><span></span><span></span><span></span></div>
+    <small style="color:var(--text-secondary);">L assistant reflechit...</small>
+  </div>
+
+  <!-- Zone de saisie -->
+  <div class="cb-input-area">
+    <!-- Indicateur ecoute vocale -->
+    <div id="orya-listening" style="display:none; align-items:center; gap:8px;
+         background:#FFF5EE; padding:5px 12px; border-radius:16px; margin-bottom:6px;
+         font-size:12px; color:#FF6600; font-weight:600;">
+      <span class="orya-pulse-dot"></span>J'ecoute...
+    </div>
+
+    <form id="chatbot-form" onsubmit="sendMessage(event)">
+      <div class="cb-input-row">
+        <input type="text" id="chatbot-input" class="cb-input"
+               placeholder="Tapez ou parlez..." autocomplete="off" maxlength="500">
+        <button type="button" id="orya-mic-btn" class="cb-btn-icon orya-mic-btn"
+                onclick="oryaToggleVoice()" title="Parler">⏺</button>
+        <button type="submit" class="cb-send-btn" id="cb-send-btn" title="Envoyer">→</button>
+      </div>
+    </form>
+    <div class="cb-footer-note">
+
+      Assistant Orange Tunisie &bull; Ctrl+K
+    </div>
+  </div>
+
+</aside>
+
+<!-- Modal historique simple -->
+<div id="cb-history-modal" class="cb-modal" style="display:none;">
+  <div class="cb-modal-box">
+    <div class="cb-modal-header">
+      <strong>Conversations precedentes</strong>
+      <button class="cb-modal-close" onclick="closeHistoryModal()">✕</button>
+    </div>
+    <div id="cb-history-list" class="cb-history-list"></div>
+  </div>
+</div>
+
+<link rel="stylesheet" href="{{ url_for('static', filename='css/chatbot.css') }}">
+<script src="{{ url_for('static', filename='js/chatbot.js') }}"></script>
+<script src="{{ url_for('static', filename='js/orya-voice.js') }}"></script>

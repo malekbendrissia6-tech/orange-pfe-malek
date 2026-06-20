@@ -1,0 +1,483 @@
+{% extends "base.html" %}
+{% from "macros.html" import filters_panel %}
+{% block title %}Suivi des Objectifs - Orange Tunisie{% endblock %}
+
+{% block head %}
+<style>
+  /* Objectifs = accent BLEU */
+  .dashboard-header { border-left-color: var(--blue, #2196F3) !important; }
+  .header-logo      { background: var(--blue, #2196F3) !important; }
+  .header-info-badge{ border-color: var(--blue, #2196F3) !important; color: var(--blue, #2196F3) !important; background: var(--blue-pale, #E3F2FD) !important; }
+  .header-action-btn{ border-color: var(--blue, #2196F3) !important; color: var(--blue, #2196F3) !important; }
+  .header-action-btn:hover{ background: var(--blue, #2196F3) !important; color: #fff !important; }
+  /* Les objectifs n'ont pas de dimension Famille / Catégorie / Cible */
+  .filter-group:has(#f-famille),
+  .filter-group:has(#f-categorie),
+  .filter-group:has(#f-cible) { display: none !important; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-pro" id="objectifs-root" data-taux-global="{{ taux_global }}">
+
+  <!-- ===== HEADER ===== -->
+  <div class="dashboard-header">
+    <div class="d-flex align-items-center gap-3">
+      <div class="header-logo">O</div>
+      <div>
+        <p class="header-title">Suivi des Objectifs</p>
+      </div>
+    </div>
+    <div class="d-flex align-items-center gap-2">
+      <span class="header-info-badge">
+RESEAU : {{ nb_total }} boutiques
+      </span>
+      <button class="header-action-btn" onclick="ouvrirSynthese('ai-objectifs-global')" title="Synthese">Synthèse</button>
+      <a href="{{ url_for('main.index') }}" class="header-action-btn" title="Accueil" style="text-decoration:none;">Accueil</a>
+      <button class="header-action-btn" onclick="location.reload()" title="Rafraichir">↺</button>
+    </div>
+  </div>
+
+  <!-- ===== 4 KPI CARDS ===== -->
+  <div class="kpis-grid">
+
+    <div class="kpi-pro kpi-deco-blue">
+      <div class="kpi-pro-content">
+        <p class="kpi-pro-label">Taux Global de Realisation</p>
+        <div class="d-flex align-items-center gap-2">
+          <p class="kpi-pro-value mb-0" id="kv-taux-global-obj">{{ taux_global }}%</p>
+          {% if taux_global < 30 %}<span class="kpi-pro-badge down">Critique</span>
+          {% elif taux_global < 70 %}<span class="kpi-pro-badge warn">En cours</span>
+          {% else %}<span class="kpi-pro-badge up">Excellent</span>{% endif %}
+        </div>
+        <div class="kpi-pro-progress mt-2">
+          <div class="kpi-pro-progress-bar" id="kv-bar-taux-obj"
+               style="background:{% if taux_global < 30 %}var(--danger){% elif taux_global < 70 %}var(--warning){% else %}var(--success){% endif %};
+                      width:{{ [taux_global, 100]|min }}%;"></div>
+        </div>
+        <p class="kpi-pro-sub mt-1" id="kv-contrats-obj">
+          {{ "{:,.0f}".format(realise_total).replace(',', ' ') }} /
+          {{ "{:,.0f}".format(objectif_total).replace(',', ' ') }} contrats
+        </p>
+      </div>
+    </div>
+
+    <div class="kpi-pro kpi-deco-green">
+      <div class="kpi-pro-content">
+        <p class="kpi-pro-label">Boutiques qui Atteignent</p>
+        <p class="kpi-pro-value" style="color:var(--success);" id="kv-atteignent">{{ nb_atteignent }}</p>
+        <p class="kpi-pro-sub" id="kv-atteignent-pct">
+          {% if nb_total > 0 %}{{ (nb_atteignent / nb_total * 100)|round(0)|int }}{% else %}0{% endif %}% du reseau (&ge;70%)
+        </p>
+        <div class="kpi-pro-progress mt-2">
+          <div class="kpi-pro-progress-bar" id="kv-bar-atteignent"
+               style="background:var(--success);
+                      width:{% if nb_total > 0 %}{{ (nb_atteignent / nb_total * 100)|round(0) }}{% else %}0{% endif %}%;"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="kpi-pro kpi-deco-red">
+      <div class="kpi-pro-content">
+        <p class="kpi-pro-label">Boutiques en Difficulte</p>
+        <p class="kpi-pro-value" style="color:var(--danger);" id="kv-difficulte">{{ nb_difficulte }}</p>
+        <p class="kpi-pro-sub">Realisation &lt; 70% de l'objectif</p>
+        <div class="kpi-pro-progress mt-2">
+          <div class="kpi-pro-progress-bar" id="kv-bar-difficulte"
+               style="background:var(--danger);
+                      width:{% if nb_total > 0 %}{{ (nb_difficulte / nb_total * 100)|round(0) }}{% else %}0{% endif %}%;"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="kpi-pro kpi-deco-orange">
+      <div class="kpi-pro-content">
+        <p class="kpi-pro-label">Top Boutique</p>
+        <p class="kpi-pro-value" style="font-size:15px; line-height:1.2;" id="kv-top-boutique-nom">
+          {{ top_boutique_nom | truncate(24, true, '...') }}
+        </p>
+        <p class="kpi-pro-sub" id="kv-top-boutique-taux">{{ top_boutique_taux|int }}% d'atteinte</p>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ===== GRAPHIQUES PRINCIPAUX (sous KPIs, larges) ===== -->
+  <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px; padding:0 16px;">
+
+    <!-- Evolution mensuelle (plus large, mieux espacé) -->
+    <div class="chart-card flip-card" onclick="flipCard(this)"
+         style="min-height:280px;">
+      <div class="flip-card-inner">
+        <div class="flip-card-front">
+          <div class="chart-pro-title">
+EVOLUTION MENSUELLE DES OBJECTIFS
+          </div>
+          <div class="chart-canvas-wrap" style="height:220px;">
+            <canvas id="chart-mois-obj"></canvas>
+          </div>
+          <small class="flip-hint"> Cliquer pour voir l'analyse</small>
+        </div>
+        <div class="flip-card-back">
+          <div class="flip-back-title">Analyse</div>
+          <p class="flip-back-text" id="ia-mois-obj">Chargement de l'analyse...</p>
+          <small class="flip-hint" style="color:rgba(255,255,255,0.5)"> Retourner</small>
+        </div>
+      </div>
+    </div>
+
+    <!-- Performance par canal (plus large, mieux colorée) -->
+    <div class="chart-card flip-card" onclick="flipCard(this)"
+         style="min-height:280px;">
+      <div class="flip-card-inner">
+        <div class="flip-card-front">
+          <div class="chart-pro-title">
+PERFORMANCE PAR CANAL
+          </div>
+          <div class="chart-canvas-wrap" style="height:220px;">
+            <canvas id="chart-canal-obj"></canvas>
+          </div>
+          <small class="flip-hint"> Cliquer pour voir l'analyse</small>
+        </div>
+        <div class="flip-card-back">
+          <div class="flip-back-title">Analyse</div>
+          <p class="flip-back-text" id="ia-canal-obj">Chargement de l'analyse...</p>
+          <small class="flip-hint" style="color:rgba(255,255,255,0.5)"> Retourner</small>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ===== LAYOUT LISTES + FILTRES ===== -->
+  <div class="main-layout">
+
+    <!-- FILTRES -->
+    {% call filters_panel() %}
+    <div class="filter-info-box"
+         style="border-left-color:{% if taux_global < 50 %}var(--danger){% else %}var(--success){% endif %};">
+      <p class="filter-info-box-label">Meilleur canal</p>
+      <p class="filter-info-box-value" style="font-size:10px;">
+        {% if canaux_taux %}{{ canaux_taux[0].canal }}{% endif %}
+      </p>
+    </div>
+    {% endcall %}
+
+    <!-- LISTES BOUTIQUES -->
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; flex:1;">
+
+      <!-- Boutiques qui atteignent -->
+      <div class="chart-card" style="display:flex; flex-direction:column; overflow:hidden;">
+        <div class="list-header-success" id="header-atteignent">
+          BOUTIQUES QUI ATTEIGNENT ({{ nb_atteignent }})
+        </div>
+        <div id="list-atteignent" style="overflow-y:auto; flex:1; max-height:360px;">
+          {% if boutiques_atteignent %}
+            {% for b in boutiques_atteignent %}
+            {% set t = b.taux_pct or 0 %}
+            <div class="top-list-item {{ 'rank-1-item' if loop.index <= 2 else '' }}"
+                 style="border-left:3px solid var(--success);">
+              <div class="rank-circle {{ 'r1' if loop.index == 1 else ('r2' if loop.index == 2 else 'r3 if loop.index == 3 else rn') }}">
+                {{ loop.index }}
+              </div>
+              <div>
+                <div class="top-list-name">{{ b.boutique }}</div>
+                <div class="top-list-sub">{{ b.canal }}{% if b.region and b.region != 'N/A' %} &bull; {{ b.region }}{% endif %}</div>
+              </div>
+              <div class="top-list-value" style="color:var(--success);">
+                {{ [t, 100]|min|round(0)|int }}%
+              </div>
+            </div>
+            {% endfor %}
+          {% else %}
+            <div class="text-center text-muted py-4">
+              <p class="mt-2 small">Aucune boutique n'a atteint son objectif.</p>
+            </div>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Boutiques en difficulte -->
+      <div class="chart-card" style="display:flex; flex-direction:column; overflow:hidden;">
+        <div class="list-header-danger" id="header-difficulte">
+          BOUTIQUES EN DIFFICULTE ({{ nb_difficulte }})
+        </div>
+        <div id="list-difficulte" style="overflow-y:auto; flex:1; max-height:360px;">
+          {% if boutiques_difficulte %}
+            {% for b in boutiques_difficulte %}
+            {% set t = b.taux_pct or 0 %}
+            <div class="top-list-item" style="border-left:3px solid var(--danger);">
+              <div class="rank-circle rn">{{ loop.index }}</div>
+              <div>
+                <div class="top-list-name">{{ b.boutique }}</div>
+                <div class="top-list-sub">{{ b.canal }} &bull; Obj : {{ "{:,.0f}".format(b.objectif or 0).replace(',', ' ') }}</div>
+              </div>
+              <div class="top-list-value" style="color:var(--danger);">{{ t|round(0)|int }}%</div>
+            </div>
+            {% endfor %}
+          {% else %}
+            <div class="text-center text-muted py-4">
+              <p class="mt-2 small">Toutes les boutiques atteignent leur objectif !</p>
+            </div>
+          {% endif %}
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <p id="ai-objectifs-global" style="display:none;"><em>Analyse en cours...</em></p>
+
+</div>
+
+<!-- Flip CSS (commun) -->
+<style>
+.flip-card { perspective: 1000px; cursor: pointer; }
+.flip-card-inner { position: relative; width: 100%; height: 100%; min-height: 280px;
+    transition: transform 0.55s; transform-style: preserve-3d; }
+.flip-card.flipped .flip-card-inner { transform: rotateY(180deg); }
+.flip-card-front, .flip-card-back {
+    position: absolute; width: 100%; height: 100%; backface-visibility: hidden;
+    -webkit-backface-visibility: hidden; }
+.flip-card-front { background: transparent; }
+.flip-card-back {
+    background: linear-gradient(135deg, #1A1A2E 0%, #16213E 100%);
+    color: white; transform: rotateY(180deg);
+    border-radius: 12px; padding: 24px; display: flex; flex-direction: column; justify-content: center;
+}
+.flip-back-title { font-size: 13px; font-weight: 700; margin-bottom: 12px; }
+.flip-back-text { font-size: 12px; line-height: 1.6; color: rgba(255,255,255,0.88); flex-grow: 1; }
+.flip-hint { display: block; font-size: 10px; color: #aaa; margin-top: 6px; text-align: right; }
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+var moisData   = {{ par_mois   | tojson }};
+var canauxTaux = {{ canaux_taux | tojson }};
+var _chartMois = null;
+var _chartCanal = null;
+
+document.addEventListener('DOMContentLoaded', function () {
+    loadStandardFilters(null); /* charge PERIODE + CANAL/FAMILLE/CATEGORIE/CIBLE */
+    buildMoisChart();
+    buildCanalChart();
+    window.queueAI('/api/interpret/objectifs-global', 'ai-objectifs-global');
+});
+
+function flipCard(card) {
+    var wasFlipped = card.classList.contains('flipped');
+    card.classList.toggle('flipped');
+    if (!wasFlipped) {
+        var iaEl = card.querySelector('[id^="ia-"]');
+        if (iaEl && iaEl.textContent.includes('Chargement')) {
+            var ep = card.querySelector('#ia-canal-obj') ?
+                '/api/interpret/objectifs-canal-compare' : '/api/interpret/objectifs-global';
+            window.queueAI(ep, iaEl.id);
+        }
+    }
+}
+
+// ===== EVOLUTION MENSUELLE =====
+function buildMoisChart(overrideData) {
+    var d = overrideData || moisData;
+    var ctx = document.getElementById('chart-mois-obj');
+    if (!ctx || !d.length) return;
+    var tauxVals = d.map(function (m) { return m.taux || 0; });
+    if (_chartMois) _chartMois.destroy();
+    _chartMois = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: d.map(function (m) { return m.mois; }),
+            datasets: [
+                /* C7 — Noir (objectif) + Orange (realise) + ligne orange */
+                { label: 'Objectif', data: d.map(function (m) { return m.objectif_total || 0; }),
+                  backgroundColor: '#000000', borderRadius: 4 },
+                { label: 'Realise', data: d.map(function (m) { return m.realise_total || 0; }),
+                  backgroundColor: '#FF6600', borderRadius: 4 },
+                { label: 'Taux (%)', data: tauxVals, type: 'line', yAxisID: 'y1',
+                  borderColor: '#FF6600', backgroundColor: 'transparent',
+                  tension: 0.3, pointRadius: 5, pointBackgroundColor: '#FF6600',
+                  pointBorderColor: '#fff', pointBorderWidth: 2 }
+            ]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            layout: { padding: { top: 20 } },
+            plugins: {
+                legend: { position: 'top', labels: { font: { size: 10 }, usePointStyle: true } },
+                datalabels: {
+                    display: function (ctx2) { return ctx2.datasetIndex < 2; },
+                    anchor: 'end', align: 'top', color: '#555', font: { size: 8 },
+                    formatter: function (v) { return v > 0 ? v.toLocaleString('fr-FR') : ''; }
+                },
+                tooltip: { callbacks: { label: function (ctx2) {
+                    if (ctx2.dataset.yAxisID === 'y1') return ' Taux : ' + ctx2.parsed.y + '%';
+                    return ' ' + ctx2.dataset.label + ' : ' + ctx2.parsed.y.toLocaleString('fr-FR') + ' contrats';
+                }}}
+            },
+            scales: {
+                x: { ticks: { color: '#888', font: { size: 9 }, maxRotation: 30 }, grid: { display: false } },
+                y: { beginAtZero: true, grid: { color: '#F0F0F0' },
+                     ticks: { color: '#888', font: { size: 9 },
+                         callback: function (v) { return v >= 1000 ? (v/1000).toFixed(0)+'k' : v; } } },
+                y1: { position: 'right', beginAtZero: true, grid: { drawOnChartArea: false },
+                      ticks: { color: '#FF6600', font: { size: 9 },
+                          callback: function (v) { return v + '%'; } } }
+            }
+        },
+        plugins: [ChartDataLabels]
+    });
+}
+
+// ===== PERFORMANCE PAR CANAL =====
+function buildCanalChart(overrideData) {
+    var d = overrideData || canauxTaux;
+    var ctx = document.getElementById('chart-canal-obj');
+    if (!ctx || !d.length) return;
+    var canalVals = d.map(function (c) { return Math.min(c.taux || 0, 100); });
+    var canalReal = d.map(function (c) { return c.taux || 0; });
+    var colors = d.map(function (c) { return PALETTE.statut(c.taux || 0); });
+    if (_chartCanal) _chartCanal.destroy();
+    _chartCanal = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: d.map(function (c) { return c.canal; }),
+            datasets: [{
+                label: 'Taux de realisation (%)',
+                data: canalVals,
+                backgroundColor: colors, borderRadius: 5, barThickness: 24
+            }]
+        },
+        options: {
+            indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+            layout: { padding: { right: 55 } },
+            plugins: {
+                legend: { display: false },
+                datalabels: {
+                    display: true, anchor: 'end', align: 'right',
+                    color: function (ctx2) { return colors[ctx2.dataIndex]; },
+                    font: { size: 10, weight: '700' },
+                    formatter: function (v, ctx2) { return canalReal[ctx2.dataIndex] + '%'; }
+                },
+                tooltip: { callbacks: { label: function (ctx2) {
+                    return ' Taux : ' + canalReal[ctx2.dataIndex] + '%';
+                }}}
+            },
+            scales: {
+                x: { beginAtZero: true, max: 110, grid: { color: '#F0F0F0' },
+                     ticks: { color: '#888', font: { size: 9 },
+                         callback: function (v) { return v <= 100 ? v + '%' : ''; } } },
+                y: { ticks: { color: '#333', font: { size: 11, weight: '600' } }, grid: { display: false } }
+            }
+        },
+        plugins: [ChartDataLabels]
+    });
+}
+
+function fetchAndUpdateObjKpis() {
+    var canal   = document.getElementById('f-canal')   ? document.getElementById('f-canal').value   : '';
+    var periode = document.getElementById('f-periode') ? document.getElementById('f-periode').value : '';
+    var parts = [];
+    if (canal)   parts.push('canal='   + encodeURIComponent(canal));
+    if (periode) parts.push('periode=' + encodeURIComponent(periode));
+    var url = '/api/objectifs/kpis' + (parts.length ? '?' + parts.join('&') : '');
+    fetch(url, { credentials: 'same-origin' })
+        .then(function(r){ return r.json(); })
+        .then(function(d){
+            var nb    = d.nb_total      || 0;
+            var att   = d.nb_atteignent || 0;
+            var diff  = d.nb_difficulte || 0;
+            var taux  = d.taux_global   || 0;
+            var real  = d.realise_total || 0;
+            var obj   = d.objectif_total|| 0;
+            function setEl(id, v){ var e=document.getElementById(id); if(e) e.textContent=v; }
+            function setW(id, pct){ var e=document.getElementById(id); if(e) e.style.width=Math.min(pct,100)+'%'; }
+            setEl('kv-taux-global-obj', taux.toFixed(1)+'%');
+            setEl('kv-atteignent',   att);
+            setEl('kv-difficulte',   diff);
+            setEl('kv-atteignent-pct', nb > 0 ? Math.round(att/nb*100)+'% du reseau (≥70%)' : '0%');
+            setEl('kv-contrats-obj', real.toLocaleString('fr-FR')+' / '+obj.toLocaleString('fr-FR')+' contrats');
+            setW('kv-bar-taux-obj',   taux);
+            setW('kv-bar-atteignent', nb > 0 ? att/nb*100 : 0);
+            setW('kv-bar-difficulte', nb > 0 ? diff/nb*100 : 0);
+
+            /* ── Top Boutique ── */
+            var topB = d.top_boutique || {};
+            setEl('kv-top-boutique-nom', (topB.boutique || 'N/A').substring(0, 24));
+            setEl('kv-top-boutique-taux', Math.round(topB.taux_pct || 0) + "% d'atteinte");
+
+            /* ── Headers listes ── */
+            setEl('header-atteignent', 'BOUTIQUES QUI ATTEIGNENT (' + att + ')');
+            setEl('header-difficulte', 'BOUTIQUES EN DIFFICULTE ('  + diff + ')');
+
+            /* ── Liste boutiques qui atteignent ── */
+            var listAtt = document.getElementById('list-atteignent');
+            if (listAtt) {
+                var rows = d.boutiques_atteignent || [];
+                if (!rows.length) {
+                    listAtt.innerHTML = '<div class="text-center text-muted py-4"><p class="mt-2 small">Aucune boutique n\'a atteint son objectif.</p></div>';
+                } else {
+                    listAtt.innerHTML = rows.map(function(b, i) {
+                        var t = Math.min(Math.round(b.taux_pct || 0), 100);
+                        var cls = i === 0 ? 'r1' : (i === 1 ? 'r2' : 'rn');
+                        var regionStr = (b.region && b.region !== 'N/A') ? ' &bull; ' + b.region : '';
+                        return '<div class="top-list-item' + (i < 2 ? ' rank-1-item' : '') + '" style="border-left:3px solid var(--success);">'
+                            + '<div class="rank-circle ' + cls + '">' + (i+1) + '</div>'
+                            + '<div><div class="top-list-name">' + (b.boutique||'') + '</div>'
+                            + '<div class="top-list-sub">' + (b.canal||'') + regionStr + '</div></div>'
+                            + '<div class="top-list-value" style="color:var(--success);">' + t + '%</div>'
+                            + '</div>';
+                    }).join('');
+                }
+            }
+
+            /* ── Liste boutiques en difficulte ── */
+            var listDiff = document.getElementById('list-difficulte');
+            if (listDiff) {
+                var rowsD = d.boutiques_difficulte || [];
+                if (!rowsD.length) {
+                    listDiff.innerHTML = '<div class="text-center text-muted py-4"><p class="mt-2 small">Toutes les boutiques atteignent leur objectif !</p></div>';
+                } else {
+                    listDiff.innerHTML = rowsD.map(function(b, i) {
+                        var t = Math.round(b.taux_pct || 0);
+                        var objFmt = (b.objectif || 0).toLocaleString('fr-FR');
+                        return '<div class="top-list-item" style="border-left:3px solid var(--danger);">'
+                            + '<div class="rank-circle rn">' + (i+1) + '</div>'
+                            + '<div><div class="top-list-name">' + (b.boutique||'') + '</div>'
+                            + '<div class="top-list-sub">' + (b.canal||'') + ' &bull; Obj : ' + objFmt + '</div></div>'
+                            + '<div class="top-list-value" style="color:var(--danger);">' + t + '%</div>'
+                            + '</div>';
+                    }).join('');
+                }
+            }
+        }).catch(function(){});
+}
+
+function fetchAndBuildObjCharts() {
+    var canal   = document.getElementById('f-canal')   ? document.getElementById('f-canal').value   : '';
+    var periode = document.getElementById('f-periode') ? document.getElementById('f-periode').value : '';
+    var parts = [];
+    if (canal)   parts.push('canal='   + encodeURIComponent(canal));
+    if (periode) parts.push('periode=' + encodeURIComponent(periode));
+    var url = '/api/objectifs/charts' + (parts.length ? '?' + parts.join('&') : '');
+    fetch(url, { credentials: 'same-origin' })
+        .then(function(r){ return r.json(); })
+        .then(function(data){
+            buildMoisChart(data.par_mois);
+            buildCanalChart(data.canaux_taux);
+        }).catch(function(){});
+}
+function applyFilters() {
+    fetchAndBuildObjCharts();
+    fetchAndUpdateObjKpis();
+}
+function resetFilters() {
+    ['f-periode','f-canal','f-famille','f-categorie','f-cible'].forEach(function(id){
+        var el = document.getElementById(id);
+        if (el) el.value = '';
+    });
+    loadStandardFilters(applyFilters);
+}
+</script>
+{% endblock %}

@@ -1,0 +1,183 @@
+{% extends "base.html" %}
+{% block title %}Data Quality — Pipeline{% endblock %}
+
+{% block content %}
+<div class="dashboard-pro dq-page">
+  <div class="dashboard-header">
+    <div class="d-flex align-items-center gap-3">
+      <div class="header-logo">P</div>
+      <div><p class="header-title">Execution Pipeline</p></div>
+    </div>
+  </div>
+
+  <!-- Etat du système -->
+  <div class="kpis-grid" style="margin-bottom:16px;">
+    <div class="kpi-pro"><div class="kpi-pro-content">
+      <p class="kpi-pro-label">FICHIERS INPUT</p>
+      <p class="kpi-pro-value">{{ nb_input }}<small style="font-size:12px;color:#888;">/8</small></p>
+      <p class="kpi-pro-sub">tables sources</p>
+    </div></div>
+    <div class="kpi-pro"><div class="kpi-pro-content">
+      <p class="kpi-pro-label">FICHIERS OUTPUT</p>
+      <p class="kpi-pro-value">{{ nb_output }}<small style="font-size:12px;color:#888;">/8</small></p>
+      <p class="kpi-pro-sub">tables nettoyees</p>
+    </div></div>
+    <div class="kpi-pro"><div class="kpi-pro-content">
+      <p class="kpi-pro-label">FICHIERS ERREUR</p>
+      <p class="kpi-pro-value" style="color:{% if nb_error > 0 %}var(--danger){% else %}var(--success){% endif %};">{{ nb_error }}</p>
+      <p class="kpi-pro-sub">rapports d'erreurs</p>
+    </div></div>
+    <div class="kpi-pro"><div class="kpi-pro-content">
+      <p class="kpi-pro-label">LOGS</p>
+      <p class="kpi-pro-value">{{ nb_logs }}</p>
+      <p class="kpi-pro-sub">executions</p>
+    </div></div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+
+    <!-- Lancer pipeline -->
+    <div class="chart-card">
+      <div class="chart-pro-title">LANCEMENT DU PIPELINE ETL</div>
+      <p style="font-size:12px;color:#888;margin-bottom:12px;">Traite les 8 tables et genere les fichiers nettoyes</p>
+      <div style="display:grid;gap:10px;">
+        <div>
+          <label style="font-size:11px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:1px;">MODE</label>
+          <select id="p-mode" class="form-select form-select-sm" onchange="toggleTableSelect()">
+            <option value="">Pipeline complet (8 tables)</option>
+            <option value="specific">Table specifique</option>
+          </select>
+        </div>
+        <div id="p-table-wrap" style="display:none;">
+          <label style="font-size:11px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:1px;">TABLE</label>
+          <select id="p-table" class="form-select form-select-sm">
+            {% for t in tables %}<option>{{ t }}</option>{% endfor %}
+          </select>
+        </div>
+        <button onclick="runPipeline()" id="btn-pipeline" style="background:#FF6600;color:white;border:none;padding:10px 20px;border-radius:8px;font-weight:600;font-size:13px;cursor:pointer;">
+LANCER LE PIPELINE
+        </button>
+      </div>
+      <div id="pipeline-result" style="margin-top:12px;display:none;"></div>
+      <details id="pipeline-output-wrap" style="margin-top:10px;display:none;">
+        <summary style="font-size:11px;cursor:pointer;color:#888;">Voir la sortie</summary>
+        <pre id="pipeline-output" style="font-size:10px;background:#1A1A2E;color:#E0E0E0;border-radius:6px;padding:12px;overflow-x:auto;max-height:260px;margin:8px 0 0;"></pre>
+      </details>
+    </div>
+
+    <!-- Lancer tests -->
+    <div class="chart-card">
+      <div class="chart-pro-title">TESTS UNITAIRES</div>
+      <p style="font-size:12px;color:#888;margin-bottom:12px;">Execute les tests pytest du projet</p>
+      <div style="display:grid;gap:10px;">
+        <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;">
+          <input type="checkbox" id="t-coverage" style="accent-color:#FF6600;">
+          Inclure la couverture de code
+        </label>
+        <button onclick="runTests()" id="btn-tests" style="background:#2E7D32;color:white;border:none;padding:10px 20px;border-radius:8px;font-weight:600;font-size:13px;cursor:pointer;">
+LANCER LES TESTS
+        </button>
+      </div>
+      <div id="tests-kpis" style="margin-top:12px;display:none;"></div>
+      <div id="tests-result" style="margin-top:10px;display:none;"></div>
+      <details id="tests-output-wrap" style="margin-top:10px;display:none;">
+        <summary style="font-size:11px;cursor:pointer;color:#888;">Voir la sortie complete</summary>
+        <pre id="tests-output" style="font-size:10px;background:#1A1A2E;color:#E0E0E0;border-radius:6px;padding:12px;overflow-x:auto;max-height:260px;margin:8px 0 0;"></pre>
+      </details>
+    </div>
+
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function toggleTableSelect() {
+    var mode = document.getElementById('p-mode').value;
+    document.getElementById('p-table-wrap').style.display = mode === 'specific' ? '' : 'none';
+}
+
+function setBtn(id, disabled, text) {
+    var b = document.getElementById(id);
+    b.disabled = disabled;
+    b.innerHTML = text;
+}
+
+function runPipeline() {
+    setBtn('btn-pipeline', true, 'Pipeline en cours...');
+    var mode  = document.getElementById('p-mode').value;
+    var table = mode === 'specific' ? document.getElementById('p-table').value : null;
+    var res   = document.getElementById('pipeline-result');
+    res.style.display = 'block';
+    res.innerHTML = '<div style="font-size:12px;color:#888;">Execution en cours (peut prendre 1-2 min)...</div>';
+
+    fetch('/data-quality/api/run-pipeline', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ table: table })
+    })
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+        if (d.ok) {
+            res.innerHTML = '<div style="background:#E8F5E9;border-left:4px solid #2E7D32;padding:10px 14px;border-radius:6px;font-size:12px;">Pipeline execute avec succes !</div>';
+        } else {
+            res.innerHTML = '<div style="background:#FFEBEE;border-left:4px solid #C62828;padding:10px 14px;border-radius:6px;font-size:12px;">Echec (code ' + d.returncode + ')</div>';
+        }
+        var out = (d.output || '') + (d.error_out || '');
+        if (out.trim()) {
+            document.getElementById('pipeline-output-wrap').style.display = '';
+            document.getElementById('pipeline-output').textContent = out;
+        }
+    })
+    .catch(function(){ res.innerHTML = '<div style="color:var(--danger);font-size:12px;">Erreur reseau.</div>'; })
+    .finally(function(){ setBtn('btn-pipeline', false, 'LANCER LE PIPELINE'); });
+}
+
+function runTests() {
+    setBtn('btn-tests', true, 'Tests en cours...');
+    var coverage = document.getElementById('t-coverage').checked;
+    var res = document.getElementById('tests-result');
+    res.style.display = 'block';
+    res.innerHTML = '<div style="font-size:12px;color:#888;">Execution des tests...</div>';
+
+    fetch('/data-quality/api/run-tests', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ coverage: coverage })
+    })
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+        if (d.ok) {
+            res.innerHTML = '<div style="background:#E8F5E9;border-left:4px solid #2E7D32;padding:10px 14px;border-radius:6px;font-size:12px;">Tous les tests passent !</div>';
+        } else {
+            res.innerHTML = '<div style="background:#FFF3E0;border-left:4px solid #EF6C00;padding:10px 14px;border-radius:6px;font-size:12px;">Certains tests ont echoue.</div>';
+        }
+        var kpis = document.getElementById('tests-kpis');
+        if (d.passed !== null || d.coverage !== null || d.elapsed !== null) {
+            kpis.style.display = 'grid';
+            kpis.style.gridTemplateColumns = 'repeat(3,1fr)';
+            kpis.style.gap = '8px';
+            kpis.style.marginTop = '10px';
+            var items = [
+                d.passed !== null ? { label: 'TESTS PASSES', val: d.passed, sub: 'reussis' } : null,
+                d.coverage !== null ? { label: 'COUVERTURE', val: d.coverage + '%', sub: 'code teste' } : null,
+                d.elapsed !== null ? { label: 'DUREE', val: d.elapsed + 's', sub: 'execution' } : null,
+            ];
+            kpis.innerHTML = items.filter(Boolean).map(function(it){
+                return '<div class="kpi-pro" style="margin:0;"><div class="kpi-pro-content">' +
+                    '<p class="kpi-pro-label">' + it.label + '</p>' +
+                    '<p class="kpi-pro-value" style="font-size:20px;">' + it.val + '</p>' +
+                    '<p class="kpi-pro-sub">' + it.sub + '</p>' +
+                    '</div></div>';
+            }).join('');
+        }
+        if (d.output) {
+            document.getElementById('tests-output-wrap').style.display = '';
+            document.getElementById('tests-output').textContent = d.output;
+        }
+    })
+    .catch(function(){ res.innerHTML = '<div style="color:var(--danger);font-size:12px;">Erreur reseau.</div>'; })
+    .finally(function(){ setBtn('btn-tests', false, 'LANCER LES TESTS'); });
+}
+</script>
+{% endblock %}

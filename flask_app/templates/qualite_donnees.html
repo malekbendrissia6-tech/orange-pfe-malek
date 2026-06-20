@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+{% block title %}Qualite donnees - Orange Tunisie{% endblock %}
+
+{% block content %}
+<div class="dashboard-pro">
+  <div class="dashboard-header">
+    <div class="d-flex align-items-center gap-3">
+      <div class="header-logo">Q</div>
+      <div>
+        <p class="header-title">Qualite des Donnees</p>
+        <p class="header-subtitle">Controle des mappings et de la completude du DWH</p>
+      </div>
+    </div>
+    <span class="header-info-badge">
+{{ qualite.date_min }} - {{ qualite.date_max }}
+    </span>
+  </div>
+
+  <div class="kpis-grid">
+    <div class="kpi-pro">
+      <div class="kpi-pro-content">
+        <p class="kpi-pro-label">Ventes en base active</p>
+        <p class="kpi-pro-value">{{ "{:,}".format(qualite.total_ventes).replace(',', ' ') }}</p>
+        <p class="kpi-pro-sub">contrats analyses</p>
+      </div>
+    </div>
+    <div class="kpi-pro">
+      <div class="kpi-pro-content">
+        <p class="kpi-pro-label">Periode couverte</p>
+        <p class="kpi-pro-value">{{ qualite.nb_mois }}</p>
+        <p class="kpi-pro-sub">mois de ventes</p>
+      </div>
+    </div>
+    <div class="kpi-pro">
+      <div class="kpi-pro-content">
+        <p class="kpi-pro-label">Point critique</p>
+        {% set worst = qualite.metrics | sort(attribute='pct', reverse=true) | first %}
+        <p class="kpi-pro-value" style="font-size:18px;">{{ worst.label }}</p>
+        <p class="kpi-pro-sub">{{ worst.pct }}% des lignes</p>
+      </div>
+    </div>
+    <div class="kpi-pro">
+      <div class="kpi-pro-content">
+        <p class="kpi-pro-label">Action conseillee</p>
+        <p class="kpi-pro-value" style="font-size:18px;">Mapper produits</p>
+        <p class="kpi-pro-sub">via product_number = product_code</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="chart-card">
+    <div class="chart-pro-title">
+CONTROLES DE COMPLETUDE
+    </div>
+    <div class="table-responsive">
+      <table class="table table-sm align-middle mb-0">
+        <thead>
+          <tr>
+            <th>Controle</th>
+            <th class="text-end">Lignes</th>
+            <th style="width:45%;">Part</th>
+            <th class="text-end">Statut</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for m in qualite.metrics %}
+          <tr>
+            <td class="fw-semibold">{{ m.label }}</td>
+            <td class="text-end">{{ "{:,}".format(m.value).replace(',', ' ') }}</td>
+            <td>
+              <div class="progress" style="height:8px;">
+                <div class="progress-bar {% if m.pct >= 20 %}bg-danger{% elif m.pct > 0 %}bg-warning{% else %}bg-success{% endif %}"
+                     style="width:{{ [m.pct, 100]|min }}%"></div>
+              </div>
+              <span class="small text-muted">{{ m.pct }}%</span>
+            </td>
+            <td class="text-end">
+              {% if m.pct >= 20 %}
+                <span class="badge bg-danger">Critique</span>
+              {% elif m.pct > 0 %}
+                <span class="badge bg-warning text-dark">A surveiller</span>
+              {% else %}
+                <span class="badge bg-success">OK</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,86 @@
+/* ============================================================
+   banners.css — Styles centralisés des bannières de page
+   Orange Tunisie · PFE 2026 · Malek Ben Drissia
+   Règle : fond blanc, bordure gauche colorée, texte toujours sombre
+   ============================================================ */
+
+/* ── Base commune ── */
+.page-banner {
+  background: linear-gradient(135deg, #FFFFFF 0%, #FAFAFA 100%);
+  padding: 24px 32px;
+  border-radius: 0 12px 12px 0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  margin-bottom: 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.page-banner .overline {
+  font-size: 11px;
+  letter-spacing: 1.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  margin: 0 0 8px 0;
+}
+
+.page-banner h1 {
+  color: #1A1A1A !important;
+  font-family: 'Helvetica Neue', Arial, sans-serif;
+  font-weight: 700;
+  font-size: 26px;
+  margin: 0 0 8px 0;
+}
+
+.page-banner .subtitle,
+.page-banner p {
+  color: #4A4A4A !important;
+  font-family: 'Helvetica Neue', Arial, sans-serif;
+  font-weight: 400;
+  font-size: 14px;
+  margin: 0;
+}
+
+/* ── Override couleur accent sur .dashboard-header par section ── */
+
+/* Data Quality — Rouge */
+.dq-page .dashboard-header {
+  border-left-color: #E53935 !important;
+}
+.dq-page .header-logo {
+  background: #E53935 !important;
+}
+.dq-page .header-info-badge {
+  border-color: #E53935 !important;
+  color: #E53935 !important;
+  background: #FFEBEE !important;
+}
+.dq-page .header-action-btn {
+  border-color: #E53935 !important;
+  color: #E53935 !important;
+}
+.dq-page .header-action-btn:hover {
+  background: #E53935 !important;
+  color: #FFFFFF !important;
+}
+
+/* Variantes page-banner-* pour usage futur */
+.page-banner-performance,
+.page-banner-accueil-admin  { border-left: 4px solid #FF6600; }
+.page-banner-performance .overline,
+.page-banner-accueil-admin .overline { color: #FF6600; }
+
+.page-banner-objectifs      { border-left: 4px solid #2196F3; }
+.page-banner-objectifs .overline { color: #2196F3; }
+
+.page-banner-prediction     { border-left: 4px solid #9C27B0; }
+.page-banner-prediction .overline { color: #9C27B0; }
+
+.page-banner-paiements      { border-left: 4px solid #4CAF50; }
+.page-banner-paiements .overline { color: #4CAF50; }
+
+.page-banner-users          { border-left: 4px solid #6B6B6B; }
+.page-banner-users .overline { color: #6B6B6B; }
+
+.page-banner-dataquality    { border-left: 4px solid #E53935; }
+.page-banner-dataquality .overline { color: #E53935; }

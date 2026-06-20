@@ -1,0 +1,260 @@
+{% extends "base.html" %}
+{% block title %}Data Quality — Vue d'ensemble{% endblock %}
+
+{% block content %}
+<div class="dashboard-pro dq-page">
+
+  <!-- HEADER -->
+  <div class="dashboard-header">
+    <div class="d-flex align-items-center gap-3">
+      <div class="header-logo">Q</div>
+      <div>
+        <p class="header-subtitle" style="letter-spacing:2px;text-transform:uppercase;">Orange Tunisie — Data Quality</p>
+        <p class="header-title">Data Quality Monitoring</p>
+      </div>
+    </div>
+    <span class="header-info-badge">{{ now }}</span>
+  </div>
+
+  {% if False %}
+  <!-- FILTRES — désactivés sur Vue d'ensemble (vue globale non filtrée) -->
+  <!-- Pour réactiver : supprimer les balises {% if False %} et {% endif %} -->
+  <div class="filters-panel" style="margin-bottom:16px;">
+    <div class="filters-title">FILTRES</div>
+
+    <div class="filter-group">
+      <label>TABLE</label>
+      <select id="dq-f-table" class="form-select form-select-sm" onchange="loadDQStats()">
+        <option value="">Toutes</option>
+      </select>
+    </div>
+
+    <div class="filter-group">
+      <label>TYPE D'ERREUR</label>
+      <select id="dq-f-type" class="form-select form-select-sm" onchange="loadDQStats()">
+        <option value="">Tous</option>
+      </select>
+    </div>
+
+    <div class="filter-group">
+      <label>PERIODE</label>
+      <select id="dq-f-periode" class="form-select form-select-sm" onchange="loadDQStats()">
+        <option value="tout">Tout</option>
+        <option value="jour">Dernier jour</option>
+        <option value="semaine">7 derniers jours</option>
+        <option value="mois">30 derniers jours</option>
+      </select>
+    </div>
+
+    <button class="btn btn-outline-secondary w-100 btn-sm mt-2" onclick="resetDQFilters()">Reinitialiser</button>
+  </div>
+  {% endif %}
+
+  <!-- 4 KPI CARDS -->
+  <div class="kpis-grid">
+    <div class="kpi-pro"><div class="kpi-pro-content">
+      <p class="kpi-pro-label">TOTAL ERREURS</p>
+      <p class="kpi-pro-value" id="dq-total-errors" style="color:var(--danger);">—</p>
+      <p class="kpi-pro-sub">lignes detectees</p>
+    </div></div>
+    <div class="kpi-pro"><div class="kpi-pro-content">
+      <p class="kpi-pro-label">FICHIERS</p>
+      <p class="kpi-pro-value" id="dq-total-files">—</p>
+      <p class="kpi-pro-sub">rapports d'erreurs</p>
+    </div></div>
+    <div class="kpi-pro"><div class="kpi-pro-content">
+      <p class="kpi-pro-label">TABLES</p>
+      <p class="kpi-pro-value" id="dq-tables-err">—</p>
+      <p class="kpi-pro-sub">tables concernees</p>
+    </div></div>
+    <div class="kpi-pro"><div class="kpi-pro-content">
+      <p class="kpi-pro-label">LOGS</p>
+      <p class="kpi-pro-value">{{ total_logs }}</p>
+      <p class="kpi-pro-sub">executions enregistrees</p>
+    </div></div>
+  </div>
+
+  <!-- 2 GRAPHIQUES -->
+  <div id="dq-charts-section" class="charts-grid" style="grid-template-columns:1fr 1fr;">
+    <div class="chart-card">
+      <div class="chart-pro-title">ERREURS PAR TABLE</div>
+      <div class="chart-canvas-wrap"><canvas id="chart-by-table"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-pro-title">TYPES D'ERREURS</div>
+      <div class="chart-canvas-wrap"><canvas id="chart-by-type"></canvas></div>
+    </div>
+  </div>
+
+  <!-- TABLEAU DETAIL -->
+  <div class="chart-card" style="margin-top:16px;">
+    <div class="chart-pro-title">DETAIL DES FICHIERS D'ERREURS</div>
+    <div style="overflow-x:auto;">
+      <table style="width:100%;border-collapse:collapse;font-size:12px;">
+        <thead>
+          <tr style="background:#FF7900;color:white;">
+            <th style="padding:10px 12px;text-align:left;">Table</th>
+            <th style="padding:10px 12px;text-align:left;">Type d'erreur</th>
+            <th style="padding:10px 12px;text-align:right;">Lignes</th>
+            <th style="padding:10px 12px;text-align:right;">Taille (Ko)</th>
+            <th style="padding:10px 12px;text-align:left;">Modifie le</th>
+          </tr>
+        </thead>
+        <tbody id="dq-error-tbody">
+          <tr><td colspan="5" style="text-align:center;padding:24px;color:#888;">Chargement...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+var _dqChartTable = null;
+var _dqChartType  = null;
+
+function setEl(id, v) { var e = document.getElementById(id); if (e) e.textContent = v; }
+
+function loadDQFilterOptions() {
+    fetch('/data-quality/api/filter-options', { credentials: 'same-origin' })
+        .then(function(r){ return r.json(); })
+        .then(function(d){
+            var tSel = document.getElementById('dq-f-table');
+            var ySel = document.getElementById('dq-f-type');
+            (d.tables || []).forEach(function(t){
+                var o = document.createElement('option'); o.value = t; o.textContent = t;
+                tSel.appendChild(o);
+            });
+            (d.types || []).forEach(function(t){
+                var o = document.createElement('option'); o.value = t; o.textContent = t;
+                ySel.appendChild(o);
+            });
+        }).catch(function(){});
+}
+
+function loadDQStats() {
+    var table   = document.getElementById('dq-f-table')   ? document.getElementById('dq-f-table').value   : '';
+    var type    = document.getElementById('dq-f-type')    ? document.getElementById('dq-f-type').value    : '';
+    var periode = document.getElementById('dq-f-periode') ? document.getElementById('dq-f-periode').value : 'tout';
+    var parts = [];
+    if (table)           parts.push('table='   + encodeURIComponent(table));
+    if (type)            parts.push('type='    + encodeURIComponent(type));
+    if (periode !== 'tout') parts.push('periode=' + encodeURIComponent(periode));
+    var url = '/data-quality/api/stats' + (parts.length ? '?' + parts.join('&') : '');
+
+    fetch(url, { credentials: 'same-origin' })
+        .then(function(r){ return r.json(); })
+        .then(function(d){
+            /* KPIs */
+            var tot = d.total_errors || 0;
+            var errEl = document.getElementById('dq-total-errors');
+            if (errEl) {
+                errEl.textContent = tot.toLocaleString('fr-FR');
+                errEl.style.color = tot > 0 ? 'var(--danger)' : 'var(--success)';
+            }
+            setEl('dq-total-files', d.total_files || 0);
+            setEl('dq-tables-err',  (d.tables_with_err || 0) + ' / {{ total_tables }}');
+
+            /* Graphiques */
+            renderDQCharts(d.by_table || [], d.by_type || []);
+
+            /* Tableau */
+            var tbody = document.getElementById('dq-error-tbody');
+            var rows  = d.error_stats || [];
+            if (!tbody) return;
+            if (!rows.length) {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:24px;color:#888;">Aucune erreur pour ces filtres.</td></tr>';
+                return;
+            }
+            tbody.innerHTML = rows.map(function(r){
+                var rowColor = r.rows > 100 ? 'var(--danger)' : 'var(--warning)';
+                return '<tr style="border-bottom:1px solid #F0F0F0;">'
+                    + '<td style="padding:9px 12px;font-weight:600;">' + (r.table || '') + '</td>'
+                    + '<td style="padding:9px 12px;color:#888;">' + (r.type || '') + '</td>'
+                    + '<td style="padding:9px 12px;text-align:right;font-weight:700;color:' + rowColor + ';">' + (r.rows || 0).toLocaleString('fr-FR') + '</td>'
+                    + '<td style="padding:9px 12px;text-align:right;color:#888;">' + (r.size_kb || 0) + '</td>'
+                    + '<td style="padding:9px 12px;color:#888;font-size:11px;">' + (r.modified || '—') + '</td>'
+                    + '</tr>';
+            }).join('');
+        }).catch(function(){ console.error('[DQ] Erreur fetch stats'); });
+}
+
+function renderDQCharts(byTable, byType) {
+    var chartSection = document.getElementById('dq-charts-section');
+    if (chartSection) chartSection.style.display = (byTable.length || byType.length) ? '' : 'none';
+
+    var ctxT = document.getElementById('chart-by-table');
+    if (ctxT) {
+        if (_dqChartTable) _dqChartTable.destroy();
+        if (byTable.length) {
+            _dqChartTable = new Chart(ctxT, {
+                type: 'bar',
+                data: {
+                    labels: byTable.map(function(d){ return d.table; }),
+                    datasets: [{ data: byTable.map(function(d){ return d.nb; }),
+                        backgroundColor: PALETTE.degradeColors(byTable.length), borderRadius: 4 }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { display: false },
+                        datalabels: { display: true, anchor: 'end', align: 'top',
+                            color: '#333', font: { size: 9 },
+                            formatter: function(v){ return v.toLocaleString('fr-FR'); }
+                        },
+                        tooltip: { callbacks: { label: function(c){ return ' ' + c.parsed.y.toLocaleString('fr-FR') + ' erreurs'; }}}
+                    },
+                    scales: {
+                        x: { ticks: { color:'#555', font:{ size:9 }, maxRotation:-30 }, grid:{ display:false } },
+                        y: { ticks: { color:'#888', font:{ size:9 } }, grid:{ color:'#F0F0F0' } }
+                    }
+                },
+                plugins: [ChartDataLabels]
+            });
+        }
+    }
+
+    var ctxY = document.getElementById('chart-by-type');
+    if (ctxY) {
+        if (_dqChartType) _dqChartType.destroy();
+        if (byType.length) {
+            _dqChartType = new Chart(ctxY, {
+                type: 'bar',
+                data: {
+                    labels: byType.map(function(d){ return d.type; }),
+                    datasets: [{ data: byType.map(function(d){ return d.nb; }),
+                        backgroundColor: PALETTE.degradeColors(byType.length), borderRadius: 4 }]
+                },
+                options: {
+                    indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { display: false },
+                        datalabels: { display: true, anchor: 'end', align: 'right',
+                            color: '#333', font: { size: 9, weight: '700' },
+                            formatter: function(v){ return v.toLocaleString('fr-FR'); }
+                        }
+                    },
+                    scales: {
+                        x: { ticks: { color:'#888', font:{ size:9 } }, grid:{ color:'#F0F0F0' } },
+                        y: { ticks: { color:'#333', font:{ size:9 } }, grid:{ display:false } }
+                    }
+                },
+                plugins: [ChartDataLabels]
+            });
+        }
+    }
+}
+
+function resetDQFilters() {
+    ['dq-f-table','dq-f-type','dq-f-periode'].forEach(function(id){
+        var el = document.getElementById(id); if (el) el.value = (id === 'dq-f-periode' ? 'tout' : '');
+    });
+    loadDQStats();
+}
+
+document.addEventListener('DOMContentLoaded', function(){
+    loadDQFilterOptions();
+    loadDQStats();
+});
+</script>
+{% endblock %}

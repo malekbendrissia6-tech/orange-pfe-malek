@@ -1,0 +1,283 @@
+{% extends "base.html" %}
+{% block title %}Gestion Utilisateurs - Orange Tunisie{% endblock %}
+
+{% block content %}
+<div style="padding:20px 24px; max-width:1200px; margin:0 auto;">
+
+  <!-- Header -->
+  <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:24px;">
+    <div>
+      <h2 style="font-size:1.4rem; font-weight:700; color:#1A1A1A; margin:0;">
+ Gestion des Utilisateurs
+      </h2>
+      <p style="color:#888; font-size:13px; margin:4px 0 0;">Créer, modifier, bloquer ou supprimer les comptes utilisateurs.</p>
+    </div>
+    <button class="btn btn-orange" data-bs-toggle="modal" data-bs-target="#modalCreate"
+            style="background:#FF6600; border-color:#FF6600; color:white; font-weight:600;">
+ Ajouter un utilisateur
+    </button>
+  </div>
+
+  <!-- Messages flash -->
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% for cat, msg in messages %}
+      <div class="alert alert-{{ cat }} alert-dismissible fade show" role="alert">
+        {{ msg }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+      </div>
+    {% endfor %}
+  {% endwith %}
+
+  <!-- Tableau utilisateurs -->
+  <div style="background:white; border-radius:12px; border:0.5px solid #E0E0E0;
+              box-shadow:0 2px 8px rgba(0,0,0,0.04); overflow:hidden;">
+    <table class="table table-hover mb-0" style="font-size:13px;">
+      <thead style="background:#FFF5EE;">
+        <tr>
+          <th style="padding:14px 16px; font-weight:700; color:#555;">Utilisateur</th>
+          <th>Email</th>
+          <th>Rôle</th>
+          <th>Téléphone</th>
+          <th>Pages autorisées</th>
+          <th>Statut</th>
+          <th style="text-align:right; padding-right:16px;">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for u in users %}
+        <tr>
+          <td style="padding:12px 16px;">
+            <div style="display:flex; align-items:center; gap:10px;">
+              <div style="width:34px; height:34px; border-radius:50%; background:#FF6600;
+                          color:white; display:flex; align-items:center; justify-content:center;
+                          font-weight:700; font-size:14px; flex-shrink:0;">
+                {{ u.nom_complet[0]|upper }}
+              </div>
+              <span style="font-weight:600;">{{ u.nom_complet }}</span>
+            </div>
+          </td>
+          <td style="color:#555;">{{ u.email }}</td>
+          <td>
+            {% if u.role == 'admin' %}
+              <span class="badge" style="background:#FF6600; color:white;">Admin</span>
+            {% elif u.role == 'data_engineer' %}
+              <span class="badge" style="background:#0D47A1; color:white;">Data Engineer</span>
+            {% else %}
+              <span class="badge" style="background:#388E3C; color:white;">Commercial</span>
+            {% endif %}
+          </td>
+          <td style="color:#555;">{{ u.phone or '—' }}</td>
+          <td>
+            {% if u.role == 'admin' %}
+              <span style="color:#888; font-size:11px;">Toutes</span>
+            {% elif u.role == 'data_engineer' %}
+              <span style="color:#888; font-size:11px;">Data Quality</span>
+            {% else %}
+              {% if u.allowed_pages %}
+                {% for p in u.allowed_pages %}
+                  <span class="badge" style="background:#E8F5E9; color:#388E3C; font-size:10px; margin:1px;">{{ p }}</span>
+                {% endfor %}
+              {% else %}
+                <span style="color:#CCC; font-size:11px;">Aucune</span>
+              {% endif %}
+            {% endif %}
+          </td>
+          <td>
+            {% if u.is_blocked %}
+              <span class="badge bg-danger">Bloqué</span>
+            {% else %}
+              <span class="badge bg-success">Actif</span>
+            {% endif %}
+          </td>
+          <td style="text-align:right; padding-right:16px;">
+            <div style="display:flex; gap:6px; justify-content:flex-end; flex-wrap:wrap;">
+              <!-- Modifier -->
+              <button style="font-family:'Helvetica Neue',Arial,sans-serif; font-size:12px; font-weight:600;
+                             padding:5px 12px; border-radius:4px; border:1px solid #000000;
+                             background:#FFFFFF; color:#000000; cursor:pointer; transition:all 0.2s;"
+                      onmouseover="this.style.background='#000000'; this.style.color='#FFFFFF';"
+                      onmouseout="this.style.background='#FFFFFF'; this.style.color='#000000';"
+                      onclick="openEdit({{ u.user_id }}, '{{ u.nom_complet|replace("'","\\'")|e }}', '{{ u.role }}', '{{ u.phone or "" }}', {{ u.allowed_pages|tojson }})">
+                Modifier
+              </button>
+              <!-- Bloquer/Débloquer -->
+              <form method="POST" action="{{ url_for('auth.admin_toggle_block', user_id=u.user_id) }}" style="display:inline;">
+                <button type="submit"
+                        style="font-family:'Helvetica Neue',Arial,sans-serif; font-size:12px; font-weight:600;
+                               padding:5px 12px; border-radius:4px; border:1px solid #FF6600;
+                               background:#FFFFFF; color:#FF6600; cursor:pointer; transition:all 0.2s;"
+                        onmouseover="this.style.background='#FF6600'; this.style.color='#FFFFFF';"
+                        onmouseout="this.style.background='#FFFFFF'; this.style.color='#FF6600';"
+                        onclick="return confirm('{% if u.is_blocked %}Débloquer{% else %}Bloquer{% endif %} {{ u.nom_complet }} ?')">
+                  {% if u.is_blocked %}Débloquer{% else %}Bloquer{% endif %}
+                </button>
+              </form>
+              <!-- Supprimer -->
+              <form method="POST" action="{{ url_for('auth.admin_delete_user', user_id=u.user_id) }}" style="display:inline;">
+                <button type="submit"
+                        style="font-family:'Helvetica Neue',Arial,sans-serif; font-size:12px; font-weight:600;
+                               padding:5px 12px; border-radius:4px; border:1px solid #DC3545;
+                               background:#FFFFFF; color:#DC3545; cursor:pointer; transition:all 0.2s;"
+                        onmouseover="this.style.background='#DC3545'; this.style.color='#FFFFFF';"
+                        onmouseout="this.style.background='#FFFFFF'; this.style.color='#DC3545';"
+                        onclick="return confirm('Supprimer définitivement {{ u.nom_complet }} ?')">
+                  Supprimer
+                </button>
+              </form>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+</div>
+
+<!-- ===== MODAL CRÉER UTILISATEUR ===== -->
+<div class="modal fade" id="modalCreate" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header" style="background:#FF6600; color:white;">
+        <h5 class="modal-title"> Ajouter un utilisateur</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <form method="POST" action="{{ url_for('auth.admin_create_user') }}">
+        <div class="modal-body">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Nom complet *</label>
+              <input type="text" name="nom_complet" class="form-control" required>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Email *</label>
+              <input type="email" name="email" class="form-control" required>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Mot de passe *</label>
+              <input type="password" name="password" class="form-control" required minlength="6">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Téléphone</label>
+              <input type="text" name="phone" class="form-control" placeholder="+216 XX XXX XXX">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Rôle *</label>
+              <select name="role" id="create-role" class="form-select" onchange="togglePagesCreate()">
+                <option value="commercial">Commercial</option>
+                <option value="data_engineer">Data Engineer</option>
+                <option value="admin">Admin</option>
+              </select>
+            </div>
+            <div class="col-12" id="create-pages-section">
+              <label class="form-label fw-semibold">Pages autorisées</label>
+              <div class="d-flex flex-wrap gap-3">
+                {% for p in all_pages %}
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" name="allowed_pages"
+                         value="{{ p.key }}" id="cp_{{ p.key }}">
+                  <label class="form-check-label" for="cp_{{ p.key }}">{{ p.label }}</label>
+                </div>
+                {% endfor %}
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-light" data-bs-dismiss="modal">Annuler</button>
+          <button type="submit" class="btn" style="background:#FF6600; color:white; font-weight:600;">
+ Créer
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL MODIFIER UTILISATEUR ===== -->
+<div class="modal fade" id="modalEdit" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header" style="background:#555; color:white;">
+        <h5 class="modal-title"> Modifier l'utilisateur</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <form method="POST" id="editForm" data-url-base="{{ url_for('auth.admin_edit_user', user_id=0) }}">
+        <div class="modal-body">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Nom complet</label>
+              <input type="text" name="nom_complet" id="edit-nom" class="form-control" required>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Téléphone</label>
+              <input type="text" name="phone" id="edit-phone" class="form-control">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Rôle</label>
+              <select name="role" id="edit-role" class="form-select" onchange="togglePagesEdit()">
+                <option value="commercial">Commercial</option>
+                <option value="data_engineer">Data Engineer</option>
+                <option value="admin">Admin</option>
+              </select>
+            </div>
+            <div class="col-12" id="edit-pages-section">
+              <label class="form-label fw-semibold">Pages autorisées</label>
+              <div class="d-flex flex-wrap gap-3">
+                {% for p in all_pages %}
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" name="allowed_pages"
+                         value="{{ p.key }}" id="ep_{{ p.key }}">
+                  <label class="form-check-label" for="ep_{{ p.key }}">{{ p.label }}</label>
+                </div>
+                {% endfor %}
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-light" data-bs-dismiss="modal">Annuler</button>
+          <button type="submit" class="btn" style="background:#555; color:white; font-weight:600;">
+ Enregistrer
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function openEdit(userId, nom, role, phone, allowedPages) {
+    document.getElementById('edit-nom').value = nom;
+    document.getElementById('edit-phone').value = phone;
+    document.getElementById('edit-role').value = role;
+    var editForm = document.getElementById('editForm');
+    editForm.action = editForm.dataset.urlBase.replace('/0/edit', '/' + userId + '/edit');
+
+    // Cocher les pages
+    {% for p in all_pages %}
+    document.getElementById('ep_{{ p.key }}').checked = allowedPages.includes('{{ p.key }}');
+    {% endfor %}
+
+    togglePagesEdit();
+    var modal = new bootstrap.Modal(document.getElementById('modalEdit'));
+    modal.show();
+}
+
+function togglePagesCreate() {
+    var role = document.getElementById('create-role').value;
+    var section = document.getElementById('create-pages-section');
+    section.style.display = (role === 'commercial') ? '' : 'none';
+}
+
+function togglePagesEdit() {
+    var role = document.getElementById('edit-role').value;
+    var section = document.getElementById('edit-pages-section');
+    section.style.display = (role === 'commercial') ? '' : 'none';
+}
+
+// Init
+togglePagesCreate();
+</script>
+{% endblock %}

@@ -1,0 +1,59 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyc
+
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
+
+# Virtual environments
+venv/
+.venv/
+env/
+
+# Variables d'environnement (SECRETS)
+.env
+.env.local
+.env.*.local
+
+# Backups de developpement
+*.backup_*
+flask_app_backup_*/
+*.bak
+
+# Logs
+*.log
+logs/
+
+# Tests
+.pytest_cache/
+.pytest_tmp/
+.pytest_tmp_run/
+test_*.py
+htmlcov/
+.coverage
+
+# Cache
+.streamlit/
+.cache/
+.ipynb_checkpoints/
+
+# Donnees brutes / fichiers volumineux
+data/raw/
+data/processed/
+*.sql
+*.dump
+
+# Outils
+*.pbix
+node_modules/
+
+# OS
+.DS_Store
+Thumbs.db
+
+MOT DE PASSE D APPLI GOOGLE.txt
+*.txt

@@ -1,0 +1,80 @@
+/* ================================================================
+   CHARTE ORANGE OFFICIELLE — Conforme PDF IdentityAtGlance
+   PFE Orange Tunisie — Malek Ben Drissia
+================================================================ */
+
+:root {
+    /* COULEURS PRINCIPALES (60% minimum) */
+    --orange-primary: #FF6600;
+    --orange-dark:    #E55C00;
+    --orange-light:   #FF8533;
+    --black:          #000000;
+    --white:          #FFFFFF;
+
+    /* DEGRADES ORANGES (du plus fonce au plus clair) */
+    --orange-900: #B84600;
+    --orange-700: #E55C00;
+    --orange-500: #FF6600;
+    --orange-300: #FF8533;
+    --orange-200: #FFA366;
+    --orange-100: #FFD4B3;
+    --orange-50:  #FFF0E5;
+
+    /* COULEURS SECONDAIRES (40% maximum — graphiques uniquement) */
+    --secondary-blue:   #4BB4E6;
+    --secondary-yellow: #FFD200;
+    --secondary-green:  #50BE87;
+    --secondary-purple: #A885D8;
+    --secondary-pink:   #FFB4E6;
+
+    /* COULEURS DE STATUT (exception autorisee : communiquer un statut) */
+    --status-good:     #50BE87;
+    --status-warning:  #FFD200;
+    --status-critical: #C62828;
+
+    /* GRISES NEUTRES */
+    --gray-50:  #FAFAFA;
+    --gray-100: #F5F5F5;
+    --gray-200: #E0E0E0;
+    --gray-300: #BDBDBD;
+    --gray-500: #757575;
+    --gray-700: #424242;
+    --gray-900: #1A1A1A;
+
+    /* TYPOGRAPHIE */
+    --font-helvetica: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+}
+
+/* TYPOGRAPHIE GLOBALE — Helvetica Neue (regle 7 de la charte) */
+*, *::before, *::after {
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif !important;
+}
+
+body, html {
+    font-family: var(--font-helvetica);
+    color: var(--gray-900);
+}
+
+h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-helvetica);
+    font-weight: 700;
+    color: var(--gray-900);
+}
+
+p, span, div, a, li, td, th, label, input, select, button {
+    font-family: var(--font-helvetica);
+}
+
+/* COULEURS DE TEXTE conformes charte (blanc / noir / orange uniquement) */
+.text-orange { color: var(--orange-primary) !important; }
+.text-black  { color: var(--black) !important; }
+.text-white  { color: var(--white) !important; }
+
+/* RANGS Top 5 — orange(1er) + noir(2e) + orange(3e) + gris(reste) */
+.rank-circle.r1 { background: #FF6600 !important; color: #FFFFFF !important; }
+.rank-circle.r2 { background: #000000 !important; color: #FFFFFF !important; }
+.rank-circle.r3 { background: #FF6600 !important; color: #FFFFFF !important; }
+.rank-circle.rn { background: #BDBDBD !important; color: #000000 !important; }
+
+/* BADGES conformes */
+.bg-orange { background-color: var(--orange-primary) !important; }

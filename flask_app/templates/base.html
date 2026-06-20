@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Orange Tunisie{% endblock %}</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+    <link href="{{ url_for('static', filename='css/variables.css') }}" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/kpi-card.css') }}" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/dashboard-pro.css') }}" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/orange-brand.css') }}" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/banners.css') }}" rel="stylesheet">
+
+    {% block head %}{% endblock %}
+    {% block extra_css %}{% endblock %}
+
+</head>
+<body>
+
+    <!-- ===== SIDEBAR ===== -->
+    <aside class="sidebar">
+
+        <!-- En-tête -->
+        <div class="sidebar-header">
+            <div class="sidebar-orange-logo">
+                <span class="orange-logo-text">orange</span>
+                <sup class="orange-logo-tm">&#x2122;</sup>
+            </div>
+        </div>
+
+        <!-- Navigation -->
+        <nav class="sidebar-nav">
+            {% set role = session.get('role', '') %}
+            {% set allowed = session.get('allowed_pages', '[]') %}
+
+            {% if role != 'data_engineer' %}
+            <a class="nav-item {% if request.endpoint == 'main.index' %}active{% endif %}"
+               href="{{ url_for('main.index') }}">
+                <span class="sidebar-text-label">Accueil</span>
+            </a>
+            {% endif %}
+
+            {% if role == 'admin' or 'performance' in allowed %}
+            <a class="nav-item {% if request.endpoint == 'main.dashboard' %}active{% endif %}"
+               href="{{ url_for('main.dashboard') }}">
+                <span class="sidebar-text-label">Performance</span>
+            </a>
+            {% endif %}
+
+            {% if role == 'admin' or 'objectifs' in allowed %}
+            <a class="nav-item {% if request.endpoint == 'main.objectifs' %}active{% endif %}"
+               href="{{ url_for('main.objectifs') }}">
+                <span class="sidebar-text-label">Objectifs</span>
+            </a>
+            {% endif %}
+
+            {% if role == 'admin' or 'prediction' in allowed %}
+            <a class="nav-item {% if request.endpoint == 'main.prediction' %}active{% endif %}"
+               href="{{ url_for('main.prediction') }}">
+                <span class="sidebar-text-label">Prediction</span>
+            </a>
+            {% endif %}
+
+            {% if role == 'admin' or 'paiements' in allowed %}
+            <a class="nav-item {% if request.endpoint == 'main.paiements' %}active{% endif %}"
+               href="{{ url_for('main.paiements') }}">
+                <span class="sidebar-text-label">Paiements</span>
+            </a>
+            {% endif %}
+
+            {% if role == 'data_engineer' %}
+            <div style="margin:0 12px 4px;font-size:10px;letter-spacing:2px;color:#757575;text-transform:uppercase;padding:6px 0 2px;border-top:1px solid #E0E0E0;">DATA QUALITY</div>
+            <a class="nav-item {% if request.endpoint == 'data_quality.accueil' %}active{% endif %}" href="{{ url_for('data_quality.accueil') }}">
+                <span class="sidebar-text-label">Accueil</span>
+            </a>
+            <a class="nav-item {% if request.endpoint == 'data_quality.vue_ensemble' %}active{% endif %}" href="{{ url_for('data_quality.vue_ensemble') }}">
+                <span class="sidebar-text-label">Vue d'ensemble</span>
+            </a>
+            <a class="nav-item {% if request.endpoint == 'data_quality.tableau' %}active{% endif %}" href="{{ url_for('data_quality.tableau') }}">
+                <span class="sidebar-text-label">Detail par table</span>
+            </a>
+            <a class="nav-item {% if request.endpoint == 'data_quality.alertes' %}active{% endif %}" href="{{ url_for('data_quality.alertes') }}">
+                <span class="sidebar-text-label">Alertes</span>
+            </a>
+            <a class="nav-item {% if request.endpoint == 'data_quality.explorateur' %}active{% endif %}" href="{{ url_for('data_quality.explorateur') }}">
+                <span class="sidebar-text-label">Explorateur</span>
+            </a>
+            <a class="nav-item {% if request.endpoint == 'data_quality.executions' %}active{% endif %}" href="{{ url_for('data_quality.executions') }}">
+                <span class="sidebar-text-label">Historique</span>
+            </a>
+            <a class="nav-item {% if request.endpoint == 'data_quality.notifications' %}active{% endif %}" href="{{ url_for('data_quality.notifications') }}">
+                <span class="sidebar-text-label">Notifications</span>
+            </a>
+            <a class="nav-item {% if request.endpoint == 'data_quality.pipeline' %}active{% endif %}" href="{{ url_for('data_quality.pipeline') }}">
+                <span class="sidebar-text-label">Pipeline</span>
+            </a>
+            {% endif %}
+
+            {% if role == 'admin' %}
+            <div style="margin:8px 12px 4px; border-top:1px solid #E0E0E0;"></div>
+            <a class="nav-item {% if request.endpoint == 'auth.admin_users' %}active{% endif %}"
+               href="{{ url_for('auth.admin_users') }}">
+                <span class="sidebar-text-label">Gestion utilisateurs</span>
+            </a>
+            {% endif %}
+        </nav>
+
+        <!-- Footer : profil utilisateur -->
+        <div class="sidebar-footer">
+            {% if session.get('nom_complet') %}
+            <div class="d-flex align-items-center gap-2">
+                <div class="user-avatar-circle" style="flex-shrink:0;">
+                    {{ session.nom_complet[0] | upper }}
+                </div>
+                <div class="user-info flex-grow-1 sidebar-text-label" style="min-width:0; overflow:hidden;">
+                    <div style="font-size:12px; font-weight:600; color:#1A1A1A;
+                                white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+                        {{ session.nom_complet }}
+                    </div>
+                    <div style="font-size:10px; color:#757575;">
+                        {{ session.get('role', 'user') | upper }}
+                    </div>
+                </div>
+                <a href="{{ url_for('auth.logout') }}"
+                   class="sidebar-text-label"
+                   title="Deconnexion"
+                   style="color:#FF6600; font-size:11px; font-weight:600;
+                          text-decoration:none; flex-shrink:0; transition:color 0.2s;
+                          background:#FFF3E5; border:1px solid #FF6600;
+                          border-radius:5px; padding:3px 8px; letter-spacing:0.5px;"
+                   onmouseover="this.style.background='#FF6600'; this.style.color='white';"
+                   onmouseout="this.style.background='#FFF3E5'; this.style.color='#FF6600';">
+                  <i class="bi bi-box-arrow-right me-1"></i>Quitter
+                </a>
+            </div>
+            {% endif %}
+        </div>
+
+    </aside>
+
+    <!-- ===== BOUTON TOGGLE SIDEBAR (EN DEHORS — toujours visible) ===== -->
+    <button id="sidebar-toggle-btn" class="sidebar-toggle-fixed" aria-label="Replier le menu">
+        <span class="stf-bar"></span>
+        <span class="stf-bar"></span>
+        <span class="stf-bar"></span>
+    </button>
+
+    <!-- ===== CONTENU PRINCIPAL ===== -->
+    <div class="main-wrapper">
+
+        <!-- Header -->
+        <header class="page-header">
+            <div>
+                <h6 class="header-brand">ORANGE TUNISIE</h6>
+                <p class="header-subtitle">Plateforme de pilotage commercial</p>
+            </div>
+            <div style="display:flex; align-items:center; gap:12px;">
+{% if session.get('nom_complet') %}
+                <span style="font-size:12px; color:var(--text-secondary);">
+
+                    {{ session.nom_complet }}
+                </span>
+                {% endif %}
+            </div>
+        </header>
+
+        <!-- Contenu de la page -->
+        <main class="page-content">
+            {% block content %}{% endblock %}
+        </main>
+
+    </div>
+
+    {% if session.get('user_id') and session.get('role') != 'data_engineer' %}
+    {% include 'chatbot/widget.html' %}
+    {% endif %}
+
+    <!-- ===== MODAL SYNTHESE IA (réutilisable sur toutes les pages) ===== -->
+    <div id="synthese-overlay"
+         style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:2000;"
+         onclick="fermerSynthese()"></div>
+    <div id="synthese-modal"
+         style="display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
+                width:min(660px,92vw);max-height:82vh;background:#fff;border-radius:14px;
+                box-shadow:0 24px 80px rgba(0,0,0,0.28);z-index:2001;overflow:hidden;flex-direction:column;">
+      <div style="background:linear-gradient(135deg,#FF6600,#E55C00);padding:14px 20px;
+                  display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">
+        <span style="color:white;font-weight:700;font-size:14px;letter-spacing:0.3px;">
+Synthèse
+        </span>
+        <button onclick="fermerSynthese()"
+                style="background:rgba(255,255,255,0.2);border:1px solid rgba(255,255,255,0.3);
+                       color:white;width:28px;height:28px;border-radius:6px;cursor:pointer;
+                       font-size:18px;line-height:1;display:flex;align-items:center;justify-content:center;">
+          &times;
+        </button>
+      </div>
+      <div id="synthese-modal-body"
+           style="padding:20px 24px;overflow-y:auto;flex:1;font-size:13px;line-height:1.75;color:#333;">
+        <em style="color:#aaa;">Chargement...</em>
+      </div>
+    </div>
+
+    <script>
+    function ouvrirSynthese(sourceId) {
+        var modal   = document.getElementById('synthese-modal');
+        var overlay = document.getElementById('synthese-overlay');
+        var body    = document.getElementById('synthese-modal-body');
+        if (!modal) return;
+        var src = document.getElementById(sourceId);
+        body.innerHTML = src ? src.innerHTML : '<em style="color:#aaa;">Chargement...</em>';
+        modal.style.display   = 'flex';
+        overlay.style.display = 'block';
+    }
+    function fermerSynthese() {
+        var modal   = document.getElementById('synthese-modal');
+        var overlay = document.getElementById('synthese-overlay');
+        if (modal)   modal.style.display   = 'none';
+        if (overlay) overlay.style.display = 'none';
+    }
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') fermerSynthese();
+    });
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            if (window.Chart && window.Chart.defaults && window.Chart.defaults.plugins && window.Chart.defaults.plugins.datalabels) {
+                window.Chart.defaults.plugins.datalabels.display = false;
+            }
+        });
+    </script>
+    <script src="{{ url_for('static', filename='js/gauge-component.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/theme.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/palette.js') }}"></script>
+    <script>
+    // ===== SIDEBAR COLLAPSE (toggle external button fix) =====
+    (function () {
+        var STORAGE_KEY = 'sidebar_collapsed';
+
+        function applySidebarState(collapsed, animate) {
+            var sb = document.querySelector('.sidebar');
+            var mw = document.querySelector('.main-wrapper');
+            if (!sb) return;
+            if (!animate) { sb.style.transition = 'none'; }
+            if (collapsed) {
+                sb.classList.add('collapsed');
+                document.body.classList.add('sidebar-collapsed');
+                if (mw) mw.classList.add('sidebar-collapsed');
+            } else {
+                sb.classList.remove('collapsed');
+                document.body.classList.remove('sidebar-collapsed');
+                if (mw) mw.classList.remove('sidebar-collapsed');
+            }
+            if (!animate) { sb.offsetHeight; sb.style.transition = ''; }
+        }
+
+        // Restaurer depuis localStorage (persist entre sessions)
+        var saved = localStorage.getItem(STORAGE_KEY) === 'true';
+        applySidebarState(saved, false);
+
+        // Attacher le clic sur le bouton externe
+        document.addEventListener('DOMContentLoaded', function () {
+            var btn = document.getElementById('sidebar-toggle-btn');
+            if (btn) {
+                btn.addEventListener('click', function () {
+                    var sb = document.querySelector('.sidebar');
+                    if (!sb) return;
+                    var nowCollapsed = !sb.classList.contains('collapsed');
+                    applySidebarState(nowCollapsed, true);
+                    localStorage.setItem(STORAGE_KEY, nowCollapsed ? 'true' : 'false');
+                });
+            }
+        });
+
+        // Compatibilite : garder toggleSidebar() pour d'eventuels appels existants
+        window.toggleSidebar = function () {
+            var sb = document.querySelector('.sidebar');
+            if (!sb) return;
+            var nowCollapsed = !sb.classList.contains('collapsed');
+            applySidebarState(nowCollapsed, true);
+            localStorage.setItem(STORAGE_KEY, nowCollapsed ? 'true' : 'false');
+        };
+    })();
+    </script>
+    <script>
+    /* ================================================================
+       loadStandardFilters — helper commun a toutes les pages dashboard.
+       Charge /api/filter-options (canal/famille/categorie/cible) et
+       /api/mois-disponibles (periode) dans les selects standard.
+       onDone : callback appele quand les 2 fetches sont termines.
+       autoSelectFirst : si true, selectionne automatiquement le mois
+                         le plus recent dans f-periode.
+    ================================================================ */
+    function loadStandardFilters(onDone, autoSelectFirst) {
+        var _remaining = 2;
+        function _check() { if (--_remaining <= 0 && onDone) onDone(); }
+
+        fetch('/api/filter-options', { credentials: 'same-origin' })
+            .then(function(r){ return r.json(); })
+            .then(function(opts){
+                ['canal','famille','categorie','cible'].forEach(function(key){
+                    var sel = document.getElementById('f-' + key);
+                    if (!sel || !opts[key] || !opts[key].length) return;
+                    var first = sel.options[0];
+                    sel.innerHTML = ''; sel.appendChild(first);
+                    opts[key].forEach(function(v){
+                        var o = document.createElement('option');
+                        o.value = v; o.textContent = v;
+                        sel.appendChild(o);
+                    });
+                });
+                _check();
+            }).catch(_check);
+
+        fetch('/api/mois-disponibles', { credentials: 'same-origin' })
+            .then(function(r){ return r.json(); })
+            .then(function(mois){
+                var sel = document.getElementById('f-periode');
+                if (sel && mois.length) {
+                    var first = sel.options[0]; /* "Toutes" */
+                    sel.innerHTML = ''; sel.appendChild(first);
+                    mois.forEach(function(m, i){
+                        var o = document.createElement('option');
+                        o.value = m.key; o.textContent = m.label;
+                        if (i === 0 && autoSelectFirst) o.selected = true;
+                        sel.appendChild(o);
+                    });
+                    /* Badge header-periode-label (page Performance) */
+                    if (autoSelectFirst && mois[0]) {
+                        var badge = document.getElementById('header-periode-label');
+                        if (badge) badge.textContent = mois[0].label;
+                    }
+                }
+                _check();
+            }).catch(_check);
+    }
+    </script>
+
+    <script>
+    /* ================================================================
+       onFilterChange — cascade filters (canal / famille / categorie / cible).
+       Appele par onchange dans macros.html pour les 4 filtres cascades.
+       1. Envoie les selections courantes a /api/filter-options/cascade.
+       2. Met a jour les AUTRES menus (pas celui qui vient de changer).
+       3. Si la valeur precedente n'est plus dispo, remet sur "Toutes".
+       4. Appelle applyFilters() de la page courante.
+    ================================================================ */
+    function onFilterChange(changedId) {
+        var cascadeKeys = ['canal', 'famille', 'categorie', 'cible'];
+        var params = [];
+        ['periode', 'canal', 'famille', 'categorie', 'cible'].forEach(function(k) {
+            var el = document.getElementById('f-' + k);
+            if (el && el.value) {
+                params.push(encodeURIComponent(k) + '=' + encodeURIComponent(el.value));
+            }
+        });
+
+        var url = '/api/filter-options/cascade' + (params.length ? '?' + params.join('&') : '');
+        fetch(url, { credentials: 'same-origin' })
+            .then(function(r) { return r.json(); })
+            .then(function(opts) {
+                cascadeKeys.forEach(function(key) {
+                    if (changedId === 'f-' + key) return; /* ne pas toucher le filtre modifie */
+                    var sel = document.getElementById('f-' + key);
+                    if (!sel || !opts[key]) return;
+                    var currentVal = sel.value;
+                    var firstOpt = sel.options[0]; /* "Toutes" / "Tous" */
+                    sel.innerHTML = '';
+                    sel.appendChild(firstOpt);
+                    var stillAvailable = (currentVal === ''); /* vide = "Toutes" = toujours valide */
+                    opts[key].forEach(function(v) {
+                        var o = document.createElement('option');
+                        o.value = v;
+                        o.textContent = v;
+                        if (v === currentVal) { stillAvailable = true; }
+                        sel.appendChild(o);
+                    });
+                    if (!stillAvailable) { sel.value = ''; }
+                });
+                if (typeof applyFilters === 'function') { applyFilters(); }
+            })
+            .catch(function() {
+                if (typeof applyFilters === 'function') { applyFilters(); }
+            });
+    }
+    </script>
+
+    {% block scripts %}{% endblock %}
+</body>
+</html>

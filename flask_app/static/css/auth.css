@@ -1,0 +1,227 @@
+/* ================================================================
+   AUTH CSS — Orange Tunisie PFE 2026 — Malek Ben Drissia
+   Page de connexion : pleine page centree, fond blanc pur.
+================================================================ */
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body.login-page {
+  font-family: var(--font-family, 'Helvetica Neue', Arial, sans-serif);
+  background: #FFFFFF;
+  color: #1A1A1A;
+}
+
+/* ── Conteneur principal ── */
+.login-page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  background: #FFFFFF;
+  padding: 32px 24px;
+  position: relative;
+}
+
+.login-container {
+  width: 100%;
+  max-width: 420px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* ── Logo Orange ── */
+.login-logo {
+  margin-bottom: 32px;
+}
+
+.orange-logo {
+  display: inline-block;
+  background: #FF6600;
+  color: #FFFFFF;
+  font-weight: 700;
+  font-size: 22px;
+  padding: 12px 20px;
+  border-radius: 6px;
+  font-family: 'Helvetica Neue', Arial, sans-serif;
+  letter-spacing: -0.5px;
+}
+
+.orange-logo sup {
+  font-size: 11px;
+  vertical-align: super;
+  margin-left: 1px;
+}
+
+/* ── Titre et sous-titre ── */
+.login-title {
+  font-family: 'Helvetica Neue', Arial, sans-serif;
+  font-size: 30px;
+  font-weight: 700;
+  color: #FF6600;
+  margin: 0 0 8px 0;
+  text-align: center;
+}
+
+.login-subtitle {
+  font-family: 'Helvetica Neue', Arial, sans-serif;
+  font-size: 14px;
+  color: #6B6B6B;
+  margin: 0 0 32px 0;
+  text-align: center;
+}
+
+/* ── Alertes flash ── */
+.alert-msg {
+  width: 100%;
+  padding: 10px 14px;
+  border-radius: 6px;
+  font-size: 13px;
+  margin-bottom: 16px;
+}
+.alert-danger  { background: #FFEBEE; color: #C62828; border: 1px solid #EF9A9A; }
+.alert-success { background: #E8F5E9; color: #2E7D32; border: 1px solid #A5D6A7; }
+
+/* ── Formulaire ── */
+.login-form {
+  width: 100%;
+}
+
+.form-group {
+  margin-bottom: 16px;
+}
+
+.form-group label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: #1A1A1A;
+  margin-bottom: 6px;
+  font-family: 'Helvetica Neue', Arial, sans-serif;
+}
+
+.form-group input {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid #E5E5E5;
+  border-radius: 6px;
+  font-size: 14px;
+  font-family: 'Helvetica Neue', Arial, sans-serif;
+  color: #1A1A1A;
+  background: #FFFFFF;
+  transition: border-color 0.2s ease;
+}
+
+.form-group input:focus {
+  outline: none;
+  border-color: #FF6600;
+  box-shadow: 0 0 0 3px rgba(255, 102, 0, 0.10);
+}
+
+/* Champ mot de passe avec toggle */
+.input-pwd {
+  position: relative;
+}
+
+.input-pwd input {
+  padding-right: 44px;
+}
+
+.toggle-pwd {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #9B9B9B;
+  font-size: 16px;
+  padding: 0;
+  line-height: 1;
+}
+
+.toggle-pwd:hover { color: #FF6600; }
+
+/* ── Checkbox souvenir ── */
+.form-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 24px;
+  font-size: 13px;
+  color: #4A4A4A;
+  font-family: 'Helvetica Neue', Arial, sans-serif;
+}
+
+.form-checkbox input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: #FF6600;
+  cursor: pointer;
+}
+
+/* ── Bouton principal — degrade subtil premium ── */
+.btn-primary {
+  background: linear-gradient(135deg, #FF7A1A 0%, #FF6600 100%);
+  color: #FFFFFF;
+  border: none;
+  padding: 14px 24px;
+  border-radius: 6px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: 'Helvetica Neue', Arial, sans-serif;
+  letter-spacing: 0.2px;
+  box-shadow: 0 2px 6px rgba(255, 102, 0, 0.25);
+}
+
+.btn-primary:hover {
+  background: linear-gradient(135deg, #FF8533 0%, #E55A00 100%);
+  box-shadow: 0 4px 12px rgba(255, 102, 0, 0.35);
+  transform: translateY(-1px);
+}
+
+.btn-primary:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 3px rgba(255, 102, 0, 0.30);
+}
+
+.btn-full { width: 100%; display: block; }
+
+/* ── Connexions rapides ── */
+.quick-login {
+  display: flex;
+  gap: 12px;
+  margin-top: 24px;
+  padding-top: 24px;
+  border-top: 1px solid #E5E5E5;
+}
+
+.btn-quick {
+  flex: 1;
+  background: #FFFFFF;
+  color: #FF6600;
+  border: 1px solid #FF6600;
+  padding: 10px 16px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease;
+  font-family: 'Helvetica Neue', Arial, sans-serif;
+}
+
+.btn-quick:hover { background: #FFF3E5; }
+
+/* ── Pied de page ── */
+.login-footer {
+  position: fixed;
+  bottom: 20px;
+  font-size: 11px;
+  color: #9B9B9B;
+  text-align: center;
+  font-family: 'Helvetica Neue', Arial, sans-serif;
+}

@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160" width="160" height="160">
+  <!-- Fond carré orange avec coins arrondis -->
+  <rect width="160" height="160" rx="18" ry="18" fill="#FF6600"/>
+  <!-- Texte "orange" en blanc, style officiel -->
+  <text x="80" y="98"
+        font-family="'Helvetica Neue', Helvetica, Arial, sans-serif"
+        font-size="44"
+        font-weight="300"
+        fill="white"
+        text-anchor="middle"
+        letter-spacing="-1">orange</text>
+  <!-- Symbole TM -->
+  <text x="143" y="72"
+        font-family="'Helvetica Neue', Helvetica, Arial, sans-serif"
+        font-size="16"
+        font-weight="400"
+        fill="white"
+        text-anchor="middle">&#x2122;</text>
+</svg>

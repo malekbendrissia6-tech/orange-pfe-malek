@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(cd C:\\\\PFE_Orange\\\\projet_orange_pfe; python -m py_compile flask_app\\\\chatbot\\\\agent_orya.py; echo \"Exit code: $LASTEXITCODE\")",
+      "PowerShell(cd C:\\\\PFE_Orange\\\\projet_orange_pfe; python -m py_compile flask_app\\\\chatbot\\\\chatbot_agent.py; echo \"Exit code: $LASTEXITCODE\")"
+    ]
+  }
+}

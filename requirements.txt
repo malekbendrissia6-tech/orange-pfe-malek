@@ -1,0 +1,40 @@
+# Web framework
+flask>=3.0.0
+flask-cors>=4.0.0
+flask-mail>=0.10.0
+flask-sqlalchemy>=3.1.0
+flask-login>=0.6.3
+
+# WSGI server (production)
+gunicorn>=22.0.0
+
+# Base de donnees
+psycopg2-binary>=2.9.9
+sqlalchemy>=2.0.0
+
+# Authentification / securite
+werkzeug>=3.0.0
+
+# IA / Chatbot
+groq>=0.20.0
+google-genai>=1.0.0
+anthropic>=0.40.0
+
+# Machine Learning
+scikit-learn>=1.4.0
+xgboost>=2.0.0
+prophet>=1.1.5
+joblib>=1.3.0
+
+# Data processing
+pandas>=2.0.0
+numpy>=1.24.0
+matplotlib>=3.8.0
+openpyxl>=3.1.0
+
+# PDF Export
+reportlab>=4.0.0
+
+# Utilitaires
+python-dotenv>=1.0.0
+requests>=2.31.0

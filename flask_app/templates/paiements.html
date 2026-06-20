@@ -1,0 +1,557 @@
+{% extends "base.html" %}
+{% from "macros.html" import filters_panel %}
+{% block title %}Suivi des Paiements — Orange Tunisie{% endblock %}
+
+{% block head %}
+<style>
+  /* Paiements = accent VERT */
+  .dashboard-header { border-left-color: var(--green, #4CAF50) !important; }
+  .header-logo      { background: var(--green, #4CAF50) !important; }
+  .header-info-badge{ border-color: var(--green, #4CAF50) !important; color: var(--green, #4CAF50) !important; background: var(--green-pale, #E8F5E9) !important; }
+  .header-action-btn{ border-color: var(--green, #4CAF50) !important; color: var(--green, #4CAF50) !important; }
+  .header-action-btn:hover{ background: var(--green, #4CAF50) !important; color: #fff !important; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-pro">
+
+  <!-- ═══════════════════════════════════════ HEADER ══ -->
+  <div class="dashboard-header">
+    <div class="d-flex align-items-center gap-3">
+
+      <div>
+        <h1 class="h4 fw-bold mb-0" style="color:#1A1A1A;">Suivi des Paiements</h1>
+        <p class="mb-0 small" style="color:#4A4A4A;">
+          Recouvrement &amp; risque client &mdash; {{ "{:,}".format(total_factures) }} factures analysees
+        </p>
+      </div>
+    </div>
+    <div class="d-flex align-items-center gap-2">
+      <span class="badge bg-white text-orange fs-6 px-3 py-2 fw-bold">
+        Taux 1re facture : {{ taux_1ere }}%
+      </span>
+      <button class="header-action-btn" onclick="ouvrirSynthese('ai-pai-global-text')" title="Synthese">Synthèse</button>
+      <a href="{{ url_for('main.index') }}" class="header-action-btn" title="Accueil" style="text-decoration:none;">Accueil</a>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════ 6 KPIs ══ -->
+  <div class="kpis-grid" style="grid-template-columns: repeat(6, 1fr);">
+
+    <!-- KPI 1 : Total factures -->
+    <div class="kpi-pro kpi-deco-gray">
+      <div class="kpi-body">
+        <div class="kpi-label">Total factures</div>
+        <div class="kpi-value" id="kv-total-fac">{{ "{:,}".format(total_factures) }}</div>
+        <div class="kpi-sub">souscriptions</div>
+      </div>
+    </div>
+
+    <!-- KPI 2 : Taux global paiement -->
+    <div class="kpi-pro kpi-deco-green">
+      <div class="kpi-body">
+        <div class="kpi-label">Taux global</div>
+        <div class="kpi-value text-success" id="kv-taux-global">{{ taux_paiement }}%</div>
+        <div class="kpi-sub mt-1">
+          <div class="progress" style="height:5px;">
+            <div class="progress-bar bg-success" id="kv-bar-global" style="width:{{ [taux_paiement, 100]|min }}%"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- KPI 3 : Taux 1re facture -->
+    <div class="kpi-pro {% if taux_1ere >= 85 %}kpi-deco-green{% else %}kpi-deco-red{% endif %}">
+      <div class="kpi-body">
+        <div class="kpi-label">Taux 1re facture</div>
+        <div class="kpi-value" id="kv-taux-1ere">{{ taux_1ere }}%</div>
+      </div>
+    </div>
+
+    <!-- KPI 4 : Taux 2ème facture -->
+    <div class="kpi-pro kpi-deco-blue">
+      <div class="kpi-body">
+        <div class="kpi-label">Taux 2e facture</div>
+        <div class="kpi-value" id="kv-taux-2eme">{{ taux_2eme }}%</div>
+        <div class="kpi-sub">
+          <div class="progress" style="height:5px;">
+            <div class="progress-bar" id="kv-bar-2eme"
+                 style="background:#1565C0;width:{{ [taux_2eme, 100]|min }}%"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- KPI 5 : Taux 3ème facture -->
+    <div class="kpi-pro kpi-deco-purple">
+      <div class="kpi-body">
+        <div class="kpi-label">Taux 3e facture</div>
+        <div class="kpi-value" id="kv-taux-3eme">{{ taux_3eme }}%</div>
+        <div class="kpi-sub">
+          <div class="progress" style="height:5px;">
+            <div class="progress-bar" id="kv-bar-3eme"
+                 style="background:#7B1FA2;width:{{ [taux_3eme, 100]|min }}%"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- KPI 6 : Factures impayees -->
+    <div class="kpi-pro kpi-deco-red">
+      <div class="kpi-body">
+        <div class="kpi-label">Factures impayees</div>
+        <div class="kpi-value text-danger" id="kv-impayees">{{ "{:,}".format(factures_impayees) }}</div>
+        <div class="kpi-sub" id="kv-impayees-pct">
+          {% if total_factures > 0 %}{{ "%.1f"|format(factures_impayees / total_factures * 100) }}% du total
+          {% else %}0%{% endif %}
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ═══════════════════════════════════════ MAIN LAYOUT ══ -->
+  <div class="main-layout">
+
+    <!-- FILTRES -->
+    {% call filters_panel() %}
+    <div class="mt-3">
+      <div class="filter-info-box-label mb-2"
+           style="font-size:10px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:1px;">
+        Classification risque
+      </div>
+      <div class="d-flex flex-column gap-2" style="font-size:11px;">
+        <span><span class="badge bg-danger me-1">CRITIQUE</span>impaye &ge; 30%</span>
+        <span><span class="badge bg-warning text-dark me-1">ELEVE</span>15% — 30%</span>
+        <span><span class="badge bg-secondary me-1">MODERE</span>&lt; 15%</span>
+      </div>
+    </div>
+    {% endcall %}
+
+    <!-- CHARTS GRID -->
+    <div class="charts-grid" style="grid-template-columns: 1fr 1fr; grid-template-rows: auto auto;">
+
+      <!-- Chart 1 : Evolution mensuelle taux paiement (span 2) -->
+      <div class="chart-card chart-wide flip-card" style="grid-column: span 2;" onclick="flipCard(this)">
+        <div class="flip-card-inner">
+          <div class="flip-card-front">
+            <div class="chart-header">
+              <span class="chart-title">
+Evolution mensuelle du taux de paiement
+              </span>
+              <span id="badge-periode" class="badge bg-light text-dark border small">12 derniers mois</span>
+            </div>
+            <div style="position:relative;height:300px;">
+              <canvas id="chart-evo-paiement"></canvas>
+            </div>
+            <small class="flip-hint"> Cliquer pour voir l'analyse</small>
+          </div>
+          <div class="flip-card-back">
+            <div class="flip-back-title">Analyse</div>
+            <p class="flip-back-text" id="ia-evo-paiement">Chargement de l'analyse...</p>
+            <small class="flip-hint" style="color:rgba(255,255,255,0.5)"> Retourner</small>
+          </div>
+        </div>
+      </div>
+
+      <!-- Top 5 boutiques avec impayés (pourcentage) -->
+      <div class="chart-card flip-card" onclick="flipCard(this)">
+        <div class="flip-card-inner">
+          <div class="flip-card-front">
+            <div class="chart-header list-header-danger">
+              <span class="chart-title text-white">
+Top 5 boutiques — Taux impayes
+              </span>
+            </div>
+            <div id="top-boutiques-list">
+              <div class="text-center text-muted py-4 small"><i class="bi bi-hourglass-split me-1"></i>Chargement...</div>
+            </div>
+            <small class="flip-hint"> Cliquer pour voir l'analyse</small>
+          </div>
+          <div class="flip-card-back">
+            <div class="flip-back-title">Analyse</div>
+            <p class="flip-back-text" id="ia-top-boutiques">Chargement de l'analyse...</p>
+            <small class="flip-hint" style="color:rgba(255,255,255,0.5)"> Retourner</small>
+          </div>
+        </div>
+      </div>
+
+      <!-- Donut repartition -->
+      <div class="chart-card flip-card" onclick="flipCard(this)">
+        <div class="flip-card-inner">
+          <div class="flip-card-front">
+            <div class="chart-header">
+              <span class="chart-title">
+Repartition paiements
+              </span>
+            </div>
+            <div style="position:relative;height:280px;display:flex;align-items:center;justify-content:center;">
+              <canvas id="chart-donut-paiement"></canvas>
+            </div>
+            <small class="flip-hint"> Cliquer pour voir l'analyse</small>
+          </div>
+          <div class="flip-card-back">
+            <div class="flip-back-title">Analyse</div>
+            <p class="flip-back-text" id="ia-donut-paiement">Chargement de l'analyse...</p>
+            <small class="flip-hint" style="color:rgba(255,255,255,0.5)"> Retourner</small>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tableau vendeurs à risque — LISTE COMPLÈTE SCROLLABLE -->
+      <div class="chart-card" style="grid-column: span 2;">
+        <div class="chart-header">
+          <span class="chart-title">
+Vendeurs a risque — classification
+          </span>
+          <span class="badge bg-orange text-white small">Tous les vendeurs</span>
+        </div>
+        <div id="vendeurs-risque-container">
+          <div class="text-center text-muted py-4 small"><i class="bi bi-hourglass-split me-1"></i>Chargement...</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div id="ai-pai-global-text" style="display:none;">Chargement de l'analyse...</div>
+
+</div>
+
+<!-- Flip CSS -->
+<style>
+.flip-card { perspective: 1000px; cursor: pointer; }
+.flip-card-inner { position: relative; width: 100%; height: 100%; min-height: 200px;
+    transition: transform 0.55s; transform-style: preserve-3d; }
+.flip-card.flipped .flip-card-inner { transform: rotateY(180deg); }
+.flip-card-front, .flip-card-back {
+    position: absolute; width: 100%; height: 100%; backface-visibility: hidden;
+    -webkit-backface-visibility: hidden; }
+.flip-card-front { background: transparent; display: flex; flex-direction: column; }
+.flip-card-back {
+    background: linear-gradient(135deg, #1A1A2E 0%, #16213E 100%);
+    color: white; transform: rotateY(180deg);
+    border-radius: 12px; padding: 16px 20px; display: flex; flex-direction: column; overflow: hidden;
+}
+.flip-back-title { font-size: 13px; font-weight: 700; margin-bottom: 12px; }
+.flip-back-text { font-size: 12px; line-height: 1.6; color: rgba(255,255,255,0.88); flex-grow: 1; }
+.flip-hint { display: block; font-size: 10px; color: #aaa; margin-top: 6px; text-align: right; }
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function flipCard(card) {
+    var wasFlipped = card.classList.contains('flipped');
+    card.classList.toggle('flipped');
+    if (!wasFlipped) {
+        var iaEl = card.querySelector('[id^="ia-"]');
+        if (iaEl && iaEl.textContent.includes('Chargement')) {
+            window.queueAI('/api/interpret/paiements-global', iaEl.id);
+        }
+    }
+}
+
+/* ── Donut paiements ──────────────────────────────────────── */
+var _donutChart = null;
+function buildDonut(total, impayes) {
+    var payees = total - impayes;
+    var ctx = document.getElementById('chart-donut-paiement');
+    if (!ctx) return;
+    if (_donutChart) _donutChart.destroy();
+    _donutChart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Payees', 'Impayees'],
+            datasets: [{ data: [payees, impayes],
+                backgroundColor: [PALETTE.vert, PALETTE.rouge],
+                borderWidth: 2, borderColor: '#fff', hoverOffset: 6 }]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false, cutout: '65%',
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        boxWidth: 14, font: { size: 11 },
+                        generateLabels: function(chart) {
+                            var data = chart.data;
+                            return data.labels.map(function(label, i) {
+                                var val = data.datasets[0].data[i] || 0;
+                                var pct = total > 0 ? (val / total * 100).toFixed(1) : '0.0';
+                                return {
+                                    text: label + ' : ' + val.toLocaleString('fr-FR') + ' (' + pct + '%)',
+                                    fillStyle: data.datasets[0].backgroundColor[i],
+                                    strokeStyle: data.datasets[0].backgroundColor[i],
+                                    hidden: false, index: i
+                                };
+                            });
+                        }
+                    }
+                },
+                datalabels: {
+                    display: function(ctx2){ return total > 0 && (ctx2.parsed/total*100) >= 3; },
+                    formatter: function(v){ return total > 0 ? Math.round(v/total*100)+'%' : ''; },
+                    color: '#fff', font: { size: 11, weight: '700' }
+                },
+                tooltip: { callbacks: { label: function (ctx2) {
+                    var pct = total > 0 ? (ctx2.parsed / total * 100).toFixed(1) : 0;
+                    return ' ' + ctx2.label + ' : ' + ctx2.parsed.toLocaleString('fr-FR') + ' (' + pct + '%)';
+                }}}
+            }
+        },
+        plugins: [ChartDataLabels]
+    });
+}
+buildDonut({{ total_factures }}, {{ factures_impayees }});
+
+function fetchAndUpdatePaiKpis() {
+    var periode   = document.getElementById('f-periode')   ? document.getElementById('f-periode').value   : '';
+    var canal     = document.getElementById('f-canal')     ? document.getElementById('f-canal').value     : '';
+    var famille   = document.getElementById('f-famille')   ? document.getElementById('f-famille').value   : '';
+    var categorie = document.getElementById('f-categorie') ? document.getElementById('f-categorie').value : '';
+    var cible     = document.getElementById('f-cible')     ? document.getElementById('f-cible').value     : '';
+    var parts = [];
+    if (periode)   parts.push('periode='   + encodeURIComponent(periode));
+    if (canal)     parts.push('canal='     + encodeURIComponent(canal));
+    if (famille)   parts.push('famille='   + encodeURIComponent(famille));
+    if (categorie) parts.push('categorie=' + encodeURIComponent(categorie));
+    if (cible)     parts.push('cible='     + encodeURIComponent(cible));
+    var url = '/api/paiements/kpis' + (parts.length ? '?' + parts.join('&') : '');
+    fetch(url, { credentials: 'same-origin' })
+        .then(function(r){ return r.json(); })
+        .then(function(d){
+            var total = d.total_factures || 0;
+            var imp   = d.factures_impayees || 0;
+            var t1    = d.taux_1ere    || 0;
+            var t2    = d.taux_2eme    || 0;
+            var t3    = d.taux_3eme    || 0;
+            function setEl(id, val){ var e = document.getElementById(id); if(e) e.textContent = val; }
+            function setW(id, pct){ var e = document.getElementById(id); if(e) e.style.width = Math.min(pct,100)+'%'; }
+            setEl('kv-total-fac',    total.toLocaleString('fr-FR'));
+            setEl('kv-taux-global',  t1.toFixed(1) + '%');
+            setEl('kv-taux-1ere',    t1.toFixed(1) + '%');
+            setEl('kv-taux-2eme',    t2.toFixed(1) + '%');
+            setEl('kv-taux-3eme',    t3.toFixed(1) + '%');
+            setEl('kv-impayees',     imp.toLocaleString('fr-FR'));
+            setEl('kv-impayees-pct', total > 0 ? (imp/total*100).toFixed(1)+'% du total' : '0%');
+            setW('kv-bar-global', t1);
+            setW('kv-bar-2eme',   t2);
+            setW('kv-bar-3eme',   t3);
+            buildDonut(total, imp);
+        }).catch(function(){});
+}
+
+/* ── Evolution mensuelle ──────────────────────────────────── */
+var chartEvo = null;
+function loadEvoMensuelle() {
+    var periode   = document.getElementById('f-periode')   ? document.getElementById('f-periode').value   : '';
+    var canal     = document.getElementById('f-canal')     ? document.getElementById('f-canal').value     : '';
+    var famille   = document.getElementById('f-famille')   ? document.getElementById('f-famille').value   : '';
+    var categorie = document.getElementById('f-categorie') ? document.getElementById('f-categorie').value : '';
+    var cible     = document.getElementById('f-cible')     ? document.getElementById('f-cible').value     : '';
+    /* Badge dynamique */
+    var badgeEl = document.getElementById('badge-periode');
+    if (badgeEl) {
+        if (!periode) {
+            badgeEl.textContent = 'Toutes les periodes';
+        } else {
+            var sel = document.getElementById('f-periode');
+            badgeEl.textContent = (sel && sel.options[sel.selectedIndex])
+                ? sel.options[sel.selectedIndex].text : periode;
+        }
+    }
+    var parts = [];
+    if (periode)   parts.push('periode='   + encodeURIComponent(periode));
+    if (canal)     parts.push('canal='     + encodeURIComponent(canal));
+    if (famille)   parts.push('famille='   + encodeURIComponent(famille));
+    if (categorie) parts.push('categorie=' + encodeURIComponent(categorie));
+    if (cible)     parts.push('cible='     + encodeURIComponent(cible));
+    var url = '/api/paiements/evolution-mensuelle' + (parts.length ? '?' + parts.join('&') : '');
+
+    fetch(url, { credentials: 'same-origin' })
+        .then(function (r) { return r.json(); })
+        .then(function (rows) {
+            var labels = rows.map(function (r) { return r.mois_label; });
+            var taux   = rows.map(function (r) { return parseFloat(r.taux) || 0; });
+            var payes  = rows.map(function (r) { return r.payes || 0; });
+            var ctx = document.getElementById('chart-evo-paiement');
+            if (!ctx) return;
+            if (chartEvo) chartEvo.destroy();
+            chartEvo = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        { type: 'bar', label: 'Factures payees', data: payes,
+                          backgroundColor: PALETTE.vert+'B3', yAxisID: 'y', borderRadius: 4 },
+                        { type: 'line', label: 'Taux paiement (%)', data: taux,
+                          borderColor: PALETTE.orange, backgroundColor: PALETTE.orange+'1A',
+                          borderWidth: 2, pointRadius: 4, pointBackgroundColor: PALETTE.orange,
+                          yAxisID: 'y2', tension: 0.35, fill: false }
+                    ]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'top', labels: { boxWidth: 14, font: { size: 12 } } },
+                        datalabels: {
+                            display: function(ctx2){
+                                return ctx2.datasetIndex === 0
+                                    && ctx2.parsed != null
+                                    && ctx2.parsed.y != null
+                                    && ctx2.parsed.y > 0;
+                            },
+                            anchor: 'end', align: 'top', color: '#555', font: { size: 9, weight: '600' },
+                            formatter: function(v){ return (v != null && v > 0) ? v.toLocaleString('fr-FR') : ''; }
+                        },
+                        tooltip: { callbacks: { label: function (ctx2) {
+                            var y = ctx2.parsed && ctx2.parsed.y != null ? ctx2.parsed.y : 0;
+                            if (ctx2.dataset.yAxisID === 'y2') return ' Taux : ' + y + '%';
+                            return ' Payees : ' + y.toLocaleString('fr-FR');
+                        }}}
+                    },
+                    scales: {
+                        x: { grid: { color: '#e9ecef' }, ticks: { font: { size: 11 } } },
+                        y: { position: 'left', grid: { color: '#e9ecef' },
+                             ticks: { callback: function (v) { return v.toLocaleString('fr-FR'); }, font: { size: 11 } } },
+                        y2: { position: 'right', min: 0, max: 100, grid: { drawOnChartArea: false },
+                              ticks: { callback: function (v) { return v + '%'; }, font: { size: 11 } } }
+                    }
+                },
+                plugins: [ChartDataLabels]
+            });
+        }).catch(function (err) {
+            console.error('[loadEvoMensuelle]', err);
+        });
+}
+
+function applyFilters() {
+    loadEvoMensuelle();
+    fetchAndUpdatePaiKpis();
+    fetchTopBoutiques();
+    fetchVendeursRisque();
+}
+function resetFilters() {
+    ['f-periode','f-canal','f-famille','f-categorie','f-cible'].forEach(function(id){
+        var el = document.getElementById(id); if (el) el.value = '';
+    });
+    loadStandardFilters(applyFilters);
+}
+
+function fetchTopBoutiques() {
+    var periode   = document.getElementById('f-periode')   ? document.getElementById('f-periode').value   : '';
+    var canal     = document.getElementById('f-canal')     ? document.getElementById('f-canal').value     : '';
+    var famille   = document.getElementById('f-famille')   ? document.getElementById('f-famille').value   : '';
+    var categorie = document.getElementById('f-categorie') ? document.getElementById('f-categorie').value : '';
+    var cible     = document.getElementById('f-cible')     ? document.getElementById('f-cible').value     : '';
+    var params = [];
+    if (periode)   params.push('periode='   + encodeURIComponent(periode));
+    if (canal)     params.push('canal='     + encodeURIComponent(canal));
+    if (famille)   params.push('famille='   + encodeURIComponent(famille));
+    if (categorie) params.push('categorie=' + encodeURIComponent(categorie));
+    if (cible)     params.push('cible='     + encodeURIComponent(cible));
+    var url = '/api/paiements/top-boutiques' + (params.length ? '?' + params.join('&') : '');
+    var container = document.getElementById('top-boutiques-list');
+    if (!container) return;
+    container.innerHTML = '<div class="text-center text-muted py-3 small"><i class="bi bi-hourglass-split me-1"></i>Chargement...</div>';
+    fetch(url, { credentials: 'same-origin' })
+        .then(function(r){ return r.json(); })
+        .then(function(rows){
+            if (!rows || !rows.length) {
+                container.innerHTML = '<div class="text-center text-muted py-4 small">Aucune donnee disponible</div>';
+                return;
+            }
+            var rc = ['r1','r2','r3','rn','rn'];
+            var html = '<div class="top-list">';
+            rows.forEach(function(b, i){
+                html += '<div class="top-list-item">' +
+                    '<span class="rank-circle ' + (rc[i]||'rn') + '">' + (i+1) + '</span>' +
+                    '<div class="flex-grow-1 ms-2 overflow-hidden">' +
+                        '<div class="fw-semibold text-truncate small" title="' + (b.boutique||'') + '">' + (b.boutique||'—') + '</div>' +
+                        '<div class="text-muted" style="font-size:0.78rem;">' + (b.canal||'—') + '</div>' +
+                    '</div>' +
+                    '<div class="text-end ms-2">' +
+                        '<div class="fw-bold text-danger small">' + (b.taux_impaye||0) + '%</div>' +
+                    '</div></div>';
+            });
+            html += '</div>';
+            container.innerHTML = html;
+        }).catch(function(){
+            container.innerHTML = '<div class="text-center text-muted py-4 small">Erreur de chargement</div>';
+        });
+}
+
+function fetchVendeursRisque() {
+    var periode   = document.getElementById('f-periode')   ? document.getElementById('f-periode').value   : '';
+    var canal     = document.getElementById('f-canal')     ? document.getElementById('f-canal').value     : '';
+    var famille   = document.getElementById('f-famille')   ? document.getElementById('f-famille').value   : '';
+    var categorie = document.getElementById('f-categorie') ? document.getElementById('f-categorie').value : '';
+    var cible     = document.getElementById('f-cible')     ? document.getElementById('f-cible').value     : '';
+    var params = [];
+    if (periode)   params.push('periode='   + encodeURIComponent(periode));
+    if (canal)     params.push('canal='     + encodeURIComponent(canal));
+    if (famille)   params.push('famille='   + encodeURIComponent(famille));
+    if (categorie) params.push('categorie=' + encodeURIComponent(categorie));
+    if (cible)     params.push('cible='     + encodeURIComponent(cible));
+    var url = '/api/paiements/clients-risque' + (params.length ? '?' + params.join('&') : '');
+    var container = document.getElementById('vendeurs-risque-container');
+    if (!container) return;
+    container.innerHTML = '<div class="text-center text-muted py-3 small"><i class="bi bi-hourglass-split me-1"></i>Chargement...</div>';
+    fetch(url, { credentials: 'same-origin' })
+        .then(function(r){ return r.json(); })
+        .then(function(rows){
+            if (!rows || !rows.length) {
+                container.innerHTML = '<div class="text-center text-muted py-4 small">Aucun vendeur a risque identifie</div>';
+                return;
+            }
+            var html = '<div style="max-height:380px; overflow-y:auto;">' +
+                '<table class="table table-hover table-sm mb-0 align-middle">' +
+                '<thead style="background:#f8f9fa; position:sticky; top:0; z-index:1;"><tr>' +
+                '<th>Vendeur</th><th>Boutique</th><th>Canal</th>' +
+                '<th class="text-center">Ventes</th><th class="text-center">Impayes</th>' +
+                '<th class="text-center">Taux impaye</th><th class="text-center">Risque</th>' +
+                '</tr></thead><tbody>';
+            rows.forEach(function(c){
+                var ti = parseFloat(c.taux_impaye) || 0;
+                var barCls = ti >= 30 ? 'bg-danger' : (ti >= 15 ? 'bg-warning' : 'bg-secondary');
+                var txtCls = ti >= 30 ? 'text-danger' : (ti >= 15 ? 'text-warning' : 'text-muted');
+                var badge  = c.risque === 'CRITIQUE' ? '<span class="badge bg-danger">CRITIQUE</span>' :
+                             c.risque === 'ELEVE'    ? '<span class="badge bg-warning text-dark">ELEVE</span>' :
+                                                       '<span class="badge bg-secondary">MODERE</span>';
+                html += '<tr>' +
+                    '<td class="fw-semibold small">' + (c.vendeur||'—') + '</td>' +
+                    '<td class="small text-muted" style="max-width:140px;"><span class="text-truncate d-block" title="' + (c.boutique||'') + '">' + (c.boutique||'—') + '</span></td>' +
+                    '<td><span class="badge bg-light text-dark border">' + (c.canal||'—') + '</span></td>' +
+                    '<td class="text-center">' + (c.nb_ventes||0) + '</td>' +
+                    '<td class="text-center text-danger fw-bold">' + (c.nb_impayes||0) + '</td>' +
+                    '<td class="text-center"><div class="d-flex align-items-center gap-1">' +
+                        '<div class="progress flex-grow-1" style="height:5px;">' +
+                            '<div class="progress-bar ' + barCls + '" style="width:' + Math.min(ti,100) + '%"></div>' +
+                        '</div>' +
+                        '<span class="small fw-bold ' + txtCls + '">' + ti + '%</span>' +
+                    '</div></td>' +
+                    '<td class="text-center">' + badge + '</td>' +
+                '</tr>';
+            });
+            html += '</tbody></table></div>';
+            container.innerHTML = html;
+        }).catch(function(){
+            container.innerHTML = '<div class="text-center text-muted py-4 small">Erreur de chargement</div>';
+        });
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+    loadStandardFilters(function(){
+        loadEvoMensuelle();
+        fetchAndUpdatePaiKpis();
+        fetchTopBoutiques();
+        fetchVendeursRisque();
+    });
+    if (window.queueAI) {
+        window.queueAI('/api/interpret/paiements-global', 'ai-pai-global-text');
+    }
+});
+</script>
+{% endblock %}

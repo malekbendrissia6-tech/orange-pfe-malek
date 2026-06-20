@@ -1,0 +1,196 @@
+/* ===== PAGE ACCUEIL ORANGE TUNISIE - V4 ===== */
+
+/* HERO */
+.home-hero {
+  background:
+    linear-gradient(90deg, rgba(0,0,0,0.70) 0%, rgba(0,0,0,0.42) 52%, rgba(0,0,0,0.18) 100%),
+    url('/static/images/brand/orange-enseigne.webp');
+  background-size: cover;
+  background-position: center;
+  border-radius: 16px;
+  padding: 3rem 2rem;
+  text-align: center;
+  margin-bottom: 1.5rem;
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--border-light);
+}
+
+
+.home-hero > * { position: relative; z-index: 1; }
+
+.home-date-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--bg-card);
+  padding: 8px 18px;
+  border-radius: 25px;
+  margin-bottom: 1.5rem;
+  border: 1px solid #FFD4B3;
+  box-shadow: var(--shadow-sm);
+  font-size: 13px;
+  color: #993C1D;
+  font-weight: 500;
+}
+
+
+.home-date-badge i { color: #FF6600; }
+
+.home-hero h1 {
+  font-size: 2.4rem;
+  font-weight: 700;
+  color: white;
+  margin: 0 0 0.75rem;
+  line-height: 1.2;
+}
+
+.home-hero p.lead {
+  font-size: 1.05rem;
+  color: rgba(255,255,255,0.86);
+  max-width: 580px;
+  margin: 0 auto 1.75rem;
+  line-height: 1.6;
+}
+
+.home-cta {
+  background: #FF6600;
+  color: white;
+  padding: 13px 30px;
+  border-radius: 8px;
+  text-decoration: none;
+  font-weight: 500;
+  font-size: 15px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.3s;
+  box-shadow: 0 4px 12px rgba(255,102,0,0.3);
+}
+
+.home-cta:hover {
+  background: #e55a00;
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(255,102,0,0.4);
+}
+
+/* TITRES SECTION */
+.home-section-tag {
+  font-size: 11px;
+  color: #FF6600;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin: 0 0 0.4rem;
+}
+
+.home-section-title {
+  font-size: 1.4rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 1.25rem;
+}
+
+/* SECTION A PROPOS */
+.home-about-section {
+  background: var(--bg-card);
+  border-radius: 16px;
+  padding: 2rem;
+  margin-top: 1.5rem;
+  border: 1px solid var(--border-color);
+}
+
+/* PRESENCE ORANGE */
+.home-brand-strip {
+  display: grid;
+  grid-template-columns: 1.35fr 1fr;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.home-brand-card {
+  min-height: 210px;
+  border-radius: 8px;
+  overflow: hidden;
+  position: relative;
+  border: 1px solid var(--border-color);
+  background: var(--bg-card);
+}
+
+.home-brand-card-large { min-height: 260px; }
+
+.home-brand-card img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  position: absolute;
+  inset: 0;
+}
+
+.home-brand-overlay {
+  position: absolute;
+  inset: auto 0 0 0;
+  padding: 1.1rem 1.2rem;
+  background: linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.82) 100%);
+  color: white;
+}
+
+.home-brand-overlay p {
+  margin: 0 0 0.35rem;
+  color: #FFA366;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+}
+
+.home-brand-overlay h3 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.home-about-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1.25rem;
+  margin-top: 1.5rem;
+}
+
+.home-about-item {
+  text-align: center;
+  padding: 1.4rem 1rem;
+  background: var(--bg-card-alt);
+  border-radius: 12px;
+  border: 1px solid var(--border-light);
+}
+
+.home-about-item i {
+  font-size: 2.2rem;
+  color: #FF6600;
+}
+
+.home-about-item h5 {
+  font-size: 0.95rem;
+  font-weight: 600;
+  margin: 0.6rem 0 0.25rem;
+  color: var(--text-primary);
+}
+
+.home-about-item p {
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+/* RESPONSIVE */
+@media (max-width: 768px) {
+  .home-hero h1 { font-size: 1.75rem; }
+  .home-hero { padding: 2rem 1rem; }
+  .home-brand-strip { grid-template-columns: 1fr; }
+  .home-brand-card,
+  .home-brand-card-large { min-height: 210px; }
+}

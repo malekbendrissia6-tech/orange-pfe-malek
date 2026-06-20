@@ -1,0 +1,162 @@
+{% extends "base.html" %}
+{% block title %}Data Quality — Notifications{% endblock %}
+
+{% block content %}
+<div class="dashboard-pro dq-page">
+  <div class="dashboard-header">
+    <div class="d-flex align-items-center gap-3">
+      <div class="header-logo">N</div>
+      <div><p class="header-title">Notifications Email</p></div>
+    </div>
+  </div>
+
+  <!-- Info Gmail -->
+  <div style="background:#E3F2FD;border-left:4px solid #1565C0;padding:14px 18px;border-radius:6px;margin-bottom:16px;font-size:13px;">
+    <strong style="color:#1565C0;">Pre-requis Gmail :</strong>
+    Activez la validation en 2 etapes, puis creez un
+    <a href="https://myaccount.google.com/apppasswords" target="_blank" style="color:#1565C0;">mot de passe d'application</a>
+    (16 caracteres) — pas votre mot de passe Google habituel.
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+
+    <!-- Formulaire -->
+    <div class="chart-card">
+      <div class="chart-pro-title">ENVOYER UN RAPPORT</div>
+      <form id="email-form" onsubmit="sendReport(event)">
+        <div style="display:grid;gap:12px;">
+          <div>
+            <label style="font-size:11px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:1px;">Email expediteur (Gmail)</label>
+            <input type="email" id="f-exp" class="form-control form-control-sm" placeholder="monitoring@gmail.com" value="{{ mail_user }}">
+          </div>
+          <div>
+            <label style="font-size:11px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:1px;">Mot de passe d'application</label>
+            <input type="password" id="f-pwd" class="form-control form-control-sm" placeholder="xxxx xxxx xxxx xxxx">
+          </div>
+          <div>
+            <label style="font-size:11px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:1px;">Destinataire</label>
+            <input type="email" id="f-dest" class="form-control form-control-sm" placeholder="data.engineer@orange.tn">
+          </div>
+          <div>
+            <label style="font-size:11px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:1px;">Type de rapport</label>
+            <select id="f-type" class="form-select form-select-sm">
+              <option>Quotidien</option>
+              <option>Alerte erreurs</option>
+              <option>Personnalise</option>
+            </select>
+          </div>
+          <div>
+            <label style="font-size:11px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:1px;">Note personnalisee (optionnel)</label>
+            <textarea id="f-note" class="form-control form-control-sm" rows="2" placeholder="Observations, remarques..."></textarea>
+          </div>
+          <div>
+            <label style="font-size:11px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:1px;">Tables a inclure</label>
+            <div style="max-height:160px;overflow-y:auto;border:1px solid #E0E0E0;border-radius:6px;padding:8px;">
+              {% for t in tables %}
+              <label style="display:flex;align-items:center;gap:8px;font-size:12px;cursor:pointer;padding:3px 0;">
+                <input type="checkbox" class="table-check" value="{{ t }}" checked style="accent-color:#FF6600;">
+                {{ t }}
+              </label>
+              {% endfor %}
+            </div>
+          </div>
+          <button type="submit" id="btn-send" style="background:#FF6600;color:white;border:none;padding:10px 20px;border-radius:8px;font-weight:600;font-size:13px;cursor:pointer;">
+Envoyer le rapport
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Résultat + historique -->
+    <div>
+      <div id="email-result" style="display:none;" class="chart-card"></div>
+
+      <div class="chart-card" style="margin-top:{% if True %}0{% endif %};">
+        <div class="chart-pro-title">HISTORIQUE (session)</div>
+        <div id="email-history">
+          <p style="color:#888;font-size:12px;text-align:center;padding:20px 0;">Aucun email envoye dans cette session.</p>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+var emailHistory = [];
+
+function sendReport(e) {
+    e.preventDefault();
+    var btn = document.getElementById('btn-send');
+    btn.disabled = true;
+    btn.innerHTML = 'Envoi en cours...';
+
+    var tables = Array.from(document.querySelectorAll('.table-check:checked'))
+                      .map(function(cb){ return cb.value; });
+    var typeVal = document.getElementById('f-type').value;
+    var now = new Date().toLocaleDateString('fr-FR') + ' ' + new Date().toLocaleTimeString('fr-FR').slice(0,5);
+    var sujet = {
+        'Quotidien':      '[Orange Tunisie] Rapport qualite quotidien - ' + now,
+        'Alerte erreurs': '[Orange Tunisie] ALERTE : Erreurs detectees - ' + now,
+        'Personnalise':   '[Orange Tunisie] Rapport personnalise - ' + now,
+    }[typeVal] || '[Orange Tunisie] Rapport';
+
+    fetch('/data-quality/api/send-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            expediteur:   document.getElementById('f-exp').value,
+            mot_de_passe: document.getElementById('f-pwd').value,
+            destinataire: document.getElementById('f-dest').value,
+            sujet:        sujet,
+            tables:       tables,
+            note:         document.getElementById('f-note').value,
+        })
+    })
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+        var res = document.getElementById('email-result');
+        res.style.display = 'block';
+        var dest = document.getElementById('f-dest').value;
+        if (d.ok) {
+            res.innerHTML = '<div style="background:#E8F5E9;border-left:4px solid #2E7D32;padding:14px 18px;border-radius:6px;color:#1A1A1A;font-size:13px;"><strong>Email envoye avec succes</strong> a ' + dest + ' !</div>';
+            emailHistory.push({ date: now, dest: dest, type: typeVal, statut: 'OK' });
+        } else {
+            res.innerHTML = '<div style="background:#FFEBEE;border-left:4px solid #C62828;padding:14px 18px;border-radius:6px;color:#1A1A1A;font-size:13px;"><strong>Echec :</strong> ' + (d.error || 'Erreur inconnue') + '</div>';
+            emailHistory.push({ date: now, dest: dest, type: typeVal, statut: 'ERREUR' });
+        }
+        updateHistory();
+    })
+    .catch(function(err){
+        var res = document.getElementById('email-result');
+        res.style.display = 'block';
+        res.innerHTML = '<div style="background:#FFEBEE;border-left:4px solid #C62828;padding:14px 18px;border-radius:6px;font-size:13px;"><strong>Erreur reseau.</strong></div>';
+    })
+    .finally(function(){
+        btn.disabled = false;
+        btn.innerHTML = 'Envoyer le rapport';
+    });
+}
+
+function updateHistory() {
+    var el = document.getElementById('email-history');
+    if (!emailHistory.length) return;
+    el.innerHTML = '<table style="width:100%;font-size:11px;border-collapse:collapse;">' +
+        '<thead><tr style="background:#F5F5F5;">' +
+        '<th style="padding:7px 10px;text-align:left;">Date</th>' +
+        '<th style="padding:7px 10px;text-align:left;">Destinataire</th>' +
+        '<th style="padding:7px 10px;text-align:left;">Type</th>' +
+        '<th style="padding:7px 10px;text-align:left;">Statut</th>' +
+        '</tr></thead><tbody>' +
+        emailHistory.map(function(h){
+            var color = h.statut === 'OK' ? 'var(--success)' : 'var(--danger)';
+            return '<tr style="border-bottom:1px solid #F0F0F0;"><td style="padding:7px 10px;">' + h.date + '</td>' +
+                   '<td style="padding:7px 10px;">' + h.dest + '</td>' +
+                   '<td style="padding:7px 10px;">' + h.type + '</td>' +
+                   '<td style="padding:7px 10px;font-weight:700;color:' + color + ';">' + h.statut + '</td></tr>';
+        }).join('') + '</tbody></table>';
+}
+</script>
+{% endblock %}

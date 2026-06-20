@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block title %}Data Quality — Detail par table{% endblock %}
+
+{% block content %}
+<div class="dashboard-pro dq-page">
+  <div class="dashboard-header">
+    <div class="d-flex align-items-center gap-3">
+      <div class="header-logo">T</div>
+      <div><p class="header-title">Detail par Table</p></div>
+    </div>
+  </div>
+
+  <!-- Sélecteur table -->
+  <div class="filters-panel" style="margin-bottom:16px;">
+    <div class="filters-title">TABLE</div>
+    <form method="get" style="display:flex;align-items:center;gap:10px;">
+      <select name="table" class="form-select form-select-sm" style="max-width:260px;" onchange="this.form.submit()">
+        {% for t in tables %}
+        <option value="{{ t }}" {% if t == table_choisie %}selected{% endif %}>{{ t }}</option>
+        {% endfor %}
+      </select>
+    </form>
+  </div>
+
+  {% if not table_errors %}
+  <div class="chart-card" style="text-align:center;padding:40px 20px;color:#888;">
+
+    <p style="margin:12px 0 4px;font-weight:600;">Aucune erreur pour <strong>{{ table_choisie }}</strong></p>
+    <p style="font-size:12px;">Cette table est parfaitement propre.</p>
+  </div>
+  {% else %}
+
+  <!-- KPIs -->
+  <div class="kpis-grid" style="grid-template-columns:repeat(3,1fr);margin-bottom:16px;">
+    <div class="kpi-pro"><div class="kpi-pro-content">
+      <p class="kpi-pro-label">TOTAL ERREURS</p>
+      <p class="kpi-pro-value" style="color:var(--danger);">{{ "{:,}".format(total_table).replace(',', ' ') }}</p>
+      <p class="kpi-pro-sub">lignes problematiques</p>
+    </div></div>
+    <div class="kpi-pro"><div class="kpi-pro-content">
+      <p class="kpi-pro-label">TAILLE DATASET</p>
+      <p class="kpi-pro-value" style="font-size:22px;">{{ dataset_size }}</p>
+      <p class="kpi-pro-sub">lignes source</p>
+    </div></div>
+    <div class="kpi-pro"><div class="kpi-pro-content">
+      <p class="kpi-pro-label">TAUX D'ERREUR</p>
+      <p class="kpi-pro-value" style="font-size:22px;">{{ error_rate }}</p>
+      <p class="kpi-pro-sub">du dataset</p>
+    </div></div>
+  </div>
+
+  <!-- Alertes par type -->
+  <div class="chart-card">
+    <div class="chart-pro-title">TYPES D'ERREURS DANS {{ table_choisie | upper }}</div>
+    {% for r in table_errors %}
+    {% set sev = r.severity %}
+    <div style="
+      background:{% if sev=='CRITIQUE' %}#FFEBEE{% elif sev=='ATTENTION' %}#FFF3E0{% else %}#E3F2FD{% endif %};
+      border-left:4px solid {% if sev=='CRITIQUE' %}#C62828{% elif sev=='ATTENTION' %}#EF6C00{% else %}#1565C0{% endif %};
+      padding:14px 18px; border-radius:6px; margin-bottom:10px;">
+      <p style="font-size:11px;font-weight:700;letter-spacing:1.5px;margin:0 0 4px;text-transform:uppercase;
+         color:{% if sev=='CRITIQUE' %}#C62828{% elif sev=='ATTENTION' %}#EF6C00{% else %}#1565C0{% endif %};">{{ sev }}</p>
+      <p style="margin:0;font-size:14px;font-weight:500;color:#1A1A1A;">
+        <strong>{{ r.type }}</strong> &mdash;
+        Lignes : <strong>{{ "{:,}".format(r.rows).replace(',', ' ') }}</strong>
+        &nbsp;|&nbsp; Taille : {{ r.size_kb }} Ko
+        &nbsp;|&nbsp; Modifié : {{ r.modified or '—' }}
+      </p>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

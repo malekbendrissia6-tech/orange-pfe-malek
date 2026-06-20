@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Rapport Qualité - ventes_contrats</title>
+<style>
+  body {
+    font-family: 'Segoe UI', Arial, sans-serif;
+    margin: 0; padding: 30px; background: #f4f6f8; color: #222;
+  }
+  h1 { color: #ff6600; border-bottom: 3px solid #ff6600; padding-bottom: 10px; }
+  h2 { color: #333; margin-top: 30px; }
+  .card {
+    background: #fff; padding: 20px; border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.08); margin-bottom: 20px;
+  }
+  .metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; }
+  .metric {
+    background: linear-gradient(135deg, #ff6600 0%, #ff9933 100%);
+    color: #fff; padding: 20px; border-radius: 8px; text-align: center;
+  }
+  .metric .value { font-size: 28px; font-weight: bold; }
+  .metric .label { font-size: 13px; opacity: 0.9; margin-top: 5px; }
+  table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+  th { background: #333; color: #fff; padding: 10px; text-align: left; }
+  td { padding: 8px 10px; border-bottom: 1px solid #eee; }
+  tr:nth-child(even) { background: #fafafa; }
+  .bar-container {
+    background: #e0e0e0; border-radius: 4px; height: 20px; overflow: hidden;
+    position: relative; min-width: 150px;
+  }
+  .bar {
+    height: 100%;
+    background: linear-gradient(90deg, #4caf50, #8bc34a);
+  }
+  .bar.warn { background: linear-gradient(90deg, #ff9800, #ffc107); }
+  .bar.bad { background: linear-gradient(90deg, #f44336, #e57373); }
+  .footer { margin-top: 40px; text-align: center; color: #888; font-size: 12px; }
+</style>
+</head>
+<body>
+
+<h1>Rapport Qualité — ventes_contrats</h1>
+<p>Généré le 18/06/2026 02:07:49</p>
+
+<div class="card">
+  <h2>Résumé global</h2>
+  <div class="metrics">
+    <div class="metric">
+      <div class="value">105,088</div>
+      <div class="label">Lignes initiales</div>
+    </div>
+    <div class="metric">
+      <div class="value">105,080</div>
+      <div class="label">Lignes finales</div>
+    </div>
+    <div class="metric">
+      <div class="value">8</div>
+      <div class="label">Lignes supprimées</div>
+    </div>
+    <div class="metric">
+      <div class="value">100.0%</div>
+      <div class="label">Taux de rétention</div>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <h2>Complétude par colonne (après nettoyage)</h2>
+  <table>
+    <thead>
+      <tr><th>Colonne</th><th>Type</th><th>Non-null</th><th>NaN</th><th>% Complétude</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><b>ACTION_DATE</b></td><td>datetime64[us]</td><td>105,080</td><td>0</td><td><div class="bar-container"><div class="bar " style="width:100.0%"></div></div> 100.0%</td></tr>
+<tr><td><b>DUREE_ENGAGEMENT</b></td><td>Int16</td><td>105,080</td><td>0</td><td><div class="bar-container"><div class="bar " style="width:100.0%"></div></div> 100.0%</td></tr>
+<tr><td><b>TYPE_ENGAGEMENT</b></td><td>string</td><td>105,080</td><td>0</td><td><div class="bar-container"><div class="bar " style="width:100.0%"></div></div> 100.0%</td></tr>
+<tr><td><b>PRODUCT_NUMBER</b></td><td>Int64</td><td>105,080</td><td>0</td><td><div class="bar-container"><div class="bar " style="width:100.0%"></div></div> 100.0%</td></tr>
+<tr><td><b>ENTITY_CODE</b></td><td>string</td><td>105,080</td><td>0</td><td><div class="bar-container"><div class="bar " style="width:100.0%"></div></div> 100.0%</td></tr>
+<tr><td><b>SELLER_ID</b></td><td>string</td><td>105,080</td><td>0</td><td><div class="bar-container"><div class="bar " style="width:100.0%"></div></div> 100.0%</td></tr>
+<tr><td><b>TMCODE</b></td><td>Int64</td><td>105,080</td><td>0</td><td><div class="bar-container"><div class="bar " style="width:100.0%"></div></div> 100.0%</td></tr>
+<tr><td><b>CONTRAT_SOUSCRIT</b></td><td>string</td><td>105,080</td><td>0</td><td><div class="bar-container"><div class="bar " style="width:100.0%"></div></div> 100.0%</td></tr>
+<tr><td><b>CUSTCODE</b></td><td>float64</td><td>105,080</td><td>0</td><td><div class="bar-container"><div class="bar " style="width:100.0%"></div></div> 100.0%</td></tr>
+<tr><td><b>PRGCODE</b></td><td>Int64</td><td>105,080</td><td>0</td><td><div class="bar-container"><div class="bar " style="width:100.0%"></div></div> 100.0%</td></tr>
+<tr><td><b>OBJ_ID</b></td><td>string</td><td>105,080</td><td>0</td><td><div class="bar-container"><div class="bar " style="width:100.0%"></div></div> 100.0%</td></tr>
+<tr><td><b>FIRST_MONTH_BILL</b></td><td>Int8</td><td>101,055</td><td>4,025</td><td><div class="bar-container"><div class="bar " style="width:96.2%"></div></div> 96.2%</td></tr>
+<tr><td><b>SECOND_MONTH_BILL</b></td><td>Int8</td><td>102,038</td><td>3,042</td><td><div class="bar-container"><div class="bar " style="width:97.1%"></div></div> 97.1%</td></tr>
+<tr><td><b>THIRD_MONTH_BILL</b></td><td>Int8</td><td>101,854</td><td>3,226</td><td><div class="bar-container"><div class="bar " style="width:96.9%"></div></div> 96.9%</td></tr>
+<tr><td><b>MONTH</b></td><td>string</td><td>105,080</td><td>0</td><td><div class="bar-container"><div class="bar " style="width:100.0%"></div></div> 100.0%</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="card">
+  <h2>Transformations appliquées (24)</h2>
+  <table>
+    <thead>
+      <tr><th>#</th><th>Étape</th><th>Détails</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>1</td><td>clean_strings</td><td><b>column</b>: DUREE_ENGAGEMENT, <b>nulls_before</b>: 13146, <b>nulls_after</b>: 13146</td></tr>
+<tr><td>2</td><td>clean_strings</td><td><b>column</b>: TYPE_ENGAGEMENT, <b>nulls_before</b>: 0, <b>nulls_after</b>: 0</td></tr>
+<tr><td>3</td><td>clean_strings</td><td><b>column</b>: ENTITY_CODE, <b>nulls_before</b>: 189, <b>nulls_after</b>: 189</td></tr>
+<tr><td>4</td><td>clean_strings</td><td><b>column</b>: SELLER_ID, <b>nulls_before</b>: 0, <b>nulls_after</b>: 0</td></tr>
+<tr><td>5</td><td>clean_strings</td><td><b>column</b>: CONTRAT_SOUSCRIT, <b>nulls_before</b>: 8, <b>nulls_after</b>: 8</td></tr>
+<tr><td>6</td><td>clean_strings</td><td><b>column</b>: OBJ_ID, <b>nulls_before</b>: 8435, <b>nulls_after</b>: 8435</td></tr>
+<tr><td>7</td><td>standardize_categories</td><td><b>column</b>: DUREE_ENGAGEMENT, <b>distinct_before</b>: 9, <b>distinct_after</b>: 6</td></tr>
+<tr><td>8</td><td>standardize_categories</td><td><b>column</b>: TYPE_ENGAGEMENT, <b>distinct_before</b>: 2, <b>distinct_after</b>: 2</td></tr>
+<tr><td>9</td><td>parse_dates</td><td><b>column</b>: ACTION_DATE, <b>failed_conversions</b>: 0, <b>min_date</b>: 2024-11-01 00:00:00, <b>max_date</b>: 2025-03-31 00:00:00</td></tr>
+<tr><td>10</td><td>add_month_column</td><td><b>source_column</b>: ACTION_DATE, <b>target_column</b>: MONTH, <b>rows_with_month</b>: 105088</td></tr>
+<tr><td>11</td><td>convert_numerics</td><td><b>column</b>: PRODUCT_NUMBER, <b>failed_conversions</b>: 0</td></tr>
+<tr><td>12</td><td>convert_numerics</td><td><b>column</b>: CUSTCODE, <b>failed_conversions</b>: 0</td></tr>
+<tr><td>13</td><td>convert_numerics</td><td><b>column</b>: TMCODE, <b>failed_conversions</b>: 0</td></tr>
+<tr><td>14</td><td>convert_numerics</td><td><b>column</b>: PRGCODE, <b>failed_conversions</b>: 0</td></tr>
+<tr><td>15</td><td>convert_numerics</td><td><b>column</b>: FIRST_MONTH_BILL, <b>failed_conversions</b>: 0</td></tr>
+<tr><td>16</td><td>convert_numerics</td><td><b>column</b>: SECOND_MONTH_BILL, <b>failed_conversions</b>: 0</td></tr>
+<tr><td>17</td><td>convert_numerics</td><td><b>column</b>: THIRD_MONTH_BILL, <b>failed_conversions</b>: 0</td></tr>
+<tr><td>18</td><td>drop_null_rows</td><td><b>columns</b>: ['CONTRAT_SOUSCRIT', 'ACTION_DATE'], <b>rows_dropped</b>: 8, <b>rows_remaining</b>: 105080</td></tr>
+<tr><td>19</td><td>drop_duplicates</td><td><b>primary_key</b>: CONTRAT_SOUSCRIT, <b>duplicates_dropped</b>: 0</td></tr>
+<tr><td>20</td><td>conditional_fill</td><td><b>rule</b>: TYPE_ENGAGEMENT='Sans engagement' -> DUREE_ENGAGEMENT='0', <b>rows_affected</b>: 13144</td></tr>
+<tr><td>21</td><td>fill_missing</td><td><b>column</b>: OBJ_ID, <b>fill_value</b>: NON_RENSEIGNE, <b>rows_filled</b>: 8429</td></tr>
+<tr><td>22</td><td>fill_missing</td><td><b>column</b>: ENTITY_CODE, <b>fill_value</b>: NON_ATTRIBUE, <b>rows_filled</b>: 183</td></tr>
+<tr><td>23</td><td>fill_missing</td><td><b>column</b>: PRODUCT_NUMBER, <b>fill_value</b>: -1, <b>rows_filled</b>: 90</td></tr>
+<tr><td>24</td><td>fill_missing</td><td><b>column</b>: DUREE_ENGAGEMENT, <b>fill_value</b>: 0, <b>rows_filled</b>: 0</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="footer">
+  Pipeline de nettoyage — Projet PFE Orange Tunisie
+</div>
+
+</body>
+</html>

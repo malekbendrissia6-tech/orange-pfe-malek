@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Rapport Qualité - articles</title>
+<style>
+  body {
+    font-family: 'Segoe UI', Arial, sans-serif;
+    margin: 0; padding: 30px; background: #f4f6f8; color: #222;
+  }
+  h1 { color: #ff6600; border-bottom: 3px solid #ff6600; padding-bottom: 10px; }
+  h2 { color: #333; margin-top: 30px; }
+  .card {
+    background: #fff; padding: 20px; border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.08); margin-bottom: 20px;
+  }
+  .metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; }
+  .metric {
+    background: linear-gradient(135deg, #ff6600 0%, #ff9933 100%);
+    color: #fff; padding: 20px; border-radius: 8px; text-align: center;
+  }
+  .metric .value { font-size: 28px; font-weight: bold; }
+  .metric .label { font-size: 13px; opacity: 0.9; margin-top: 5px; }
+  table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+  th { background: #333; color: #fff; padding: 10px; text-align: left; }
+  td { padding: 8px 10px; border-bottom: 1px solid #eee; }
+  tr:nth-child(even) { background: #fafafa; }
+  .bar-container {
+    background: #e0e0e0; border-radius: 4px; height: 20px; overflow: hidden;
+    position: relative; min-width: 150px;
+  }
+  .bar {
+    height: 100%;
+    background: linear-gradient(90deg, #4caf50, #8bc34a);
+  }
+  .bar.warn { background: linear-gradient(90deg, #ff9800, #ffc107); }
+  .bar.bad { background: linear-gradient(90deg, #f44336, #e57373); }
+  .footer { margin-top: 40px; text-align: center; color: #888; font-size: 12px; }
+</style>
+</head>
+<body>
+
+<h1>Rapport Qualité — articles</h1>
+<p>Généré le 12/06/2026 21:58:50</p>
+
+<div class="card">
+  <h2>Résumé global</h2>
+  <div class="metrics">
+    <div class="metric">
+      <div class="value">279</div>
+      <div class="label">Lignes initiales</div>
+    </div>
+    <div class="metric">
+      <div class="value">279</div>
+      <div class="label">Lignes finales</div>
+    </div>
+    <div class="metric">
+      <div class="value">0</div>
+      <div class="label">Lignes supprimées</div>
+    </div>
+    <div class="metric">
+      <div class="value">100.0%</div>
+      <div class="label">Taux de rétention</div>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <h2>Complétude par colonne (après nettoyage)</h2>
+  <table>
+    <thead>
+      <tr><th>Colonne</th><th>Type</th><th>Non-null</th><th>NaN</th><th>% Complétude</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><b>PRODUCT_CODE</b></td><td>Int64</td><td>279</td><td>0</td><td><div class="bar-container"><div class="bar " style="width:100.0%"></div></div> 100.0%</td></tr>
+<tr><td><b>PRODUCT_NAME</b></td><td>string</td><td>279</td><td>0</td><td><div class="bar-container"><div class="bar " style="width:100.0%"></div></div> 100.0%</td></tr>
+<tr><td><b>PRODUCT_CONTROL_KEY</b></td><td>string</td><td>279</td><td>0</td><td><div class="bar-container"><div class="bar " style="width:100.0%"></div></div> 100.0%</td></tr>
+<tr><td><b>PRODUCT_TYPE</b></td><td>string</td><td>279</td><td>0</td><td><div class="bar-container"><div class="bar " style="width:100.0%"></div></div> 100.0%</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="card">
+  <h2>Transformations appliquées (9)</h2>
+  <table>
+    <thead>
+      <tr><th>#</th><th>Étape</th><th>Détails</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>1</td><td>clean_strings</td><td><b>column</b>: PRODUCT_NAME, <b>nulls_before</b>: 0, <b>nulls_after</b>: 0</td></tr>
+<tr><td>2</td><td>clean_strings</td><td><b>column</b>: PRODUCT_CONTROL_KEY, <b>nulls_before</b>: 0, <b>nulls_after</b>: 0</td></tr>
+<tr><td>3</td><td>clean_strings</td><td><b>column</b>: PRODUCT_TYPE, <b>nulls_before</b>: 0, <b>nulls_after</b>: 0</td></tr>
+<tr><td>4</td><td>convert_numerics</td><td><b>column</b>: PRODUCT_CODE, <b>failed_conversions</b>: 0</td></tr>
+<tr><td>5</td><td>drop_null_rows</td><td><b>columns</b>: ['PRODUCT_CODE'], <b>rows_dropped</b>: 0, <b>rows_remaining</b>: 279</td></tr>
+<tr><td>6</td><td>drop_duplicates</td><td><b>primary_key</b>: PRODUCT_CODE, <b>duplicates_dropped</b>: 0</td></tr>
+<tr><td>7</td><td>fill_missing</td><td><b>column</b>: PRODUCT_NAME, <b>fill_value</b>: NON_RENSEIGNE, <b>rows_filled</b>: 0</td></tr>
+<tr><td>8</td><td>fill_missing</td><td><b>column</b>: PRODUCT_CONTROL_KEY, <b>fill_value</b>: INCONNU, <b>rows_filled</b>: 0</td></tr>
+<tr><td>9</td><td>fill_missing</td><td><b>column</b>: PRODUCT_TYPE, <b>fill_value</b>: INCONNU, <b>rows_filled</b>: 0</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="footer">
+  Pipeline de nettoyage — Projet PFE Orange Tunisie
+</div>
+
+</body>
+</html>

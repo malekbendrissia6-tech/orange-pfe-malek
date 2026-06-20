@@ -1,0 +1,621 @@
+{% extends "base.html" %}
+{% from "macros.html" import filters_panel %}
+{% block title %}Performance Commerciale - Orange Tunisie{% endblock %}
+
+{% block content %}
+<div class="dashboard-pro" id="dashboard-root"
+     data-taux-paiement="{{ taux_paiement }}"
+     data-taux-realisation="{{ taux_realisation }}">
+
+  <!-- ===== HEADER ===== -->
+  <div class="dashboard-header">
+    <div class="d-flex align-items-center gap-3">
+      <div class="header-logo">O</div>
+      <div>
+        <p class="header-title">Performance Commerciale</p>
+      </div>
+    </div>
+    <div class="d-flex align-items-center gap-2">
+      <span class="header-info-badge" id="header-periode-label">
+Mois en cours
+      </span>
+      <button class="header-action-btn" onclick="ouvrirSynthese('ai-synthese-global')" title="Synthese">Synthèse</button>
+      <a href="{{ url_for('main.index') }}" class="header-action-btn" title="Accueil" style="text-decoration:none;">Accueil</a>
+      <button class="header-action-btn" onclick="location.reload()" title="Rafraichir">↺</button>
+    </div>
+  </div>
+
+  <!-- ===== 4 KPI CARDS ===== -->
+  <div class="kpis-grid">
+    <div class="kpi-pro kpi-deco-orange">
+      <div class="kpi-pro-content">
+        <p class="kpi-pro-label">Total Ventes</p>
+        <p class="kpi-pro-value mb-0" id="kpi-total-ventes">
+          {{ "{:,}".format(total_ventes).replace(',', ' ') }}
+        </p>
+        <div class="kpi-sparkline mt-1"><canvas id="sparkline-ventes"></canvas></div>
+        <p class="kpi-pro-sub mt-1">Contrats d'activation</p>
+      </div>
+    </div>
+    <div class="kpi-pro kpi-deco-green">
+      <div class="kpi-pro-content">
+        <p class="kpi-pro-label">Taux Paiement 1re Facture</p>
+        <p class="kpi-pro-value" id="kpi-taux-paiement">{{ taux_paiement }}%</p>
+        <div class="kpi-pro-progress mt-2">
+          <div class="kpi-pro-progress-bar" id="kpi-bar-paiement"
+               style="background:var(--success); width:{{ [taux_paiement, 100]|min }}%;"></div>
+        </div>
+      </div>
+    </div>
+    <div class="kpi-pro kpi-deco-blue">
+      <div class="kpi-pro-content">
+        <p class="kpi-pro-label">Taux de Realisation
+          <i class="bi bi-info-circle" style="font-size:0.8rem; cursor:help; opacity:0.6;"
+             title="Les objectifs sont fixes au niveau ligne de produit dans le SI source, sans granularite famille/categorie/cible. Ce composant reflete donc la realisation globale par canal sur la periode selectionnee, independamment des filtres famille/categorie/cible."></i>
+        </p>
+        <p class="kpi-pro-value" id="kpi-taux-realisation">{{ taux_realisation }}%</p>
+        <p class="kpi-pro-sub">Realisation vs objectifs</p>
+        <div class="kpi-pro-progress mt-2">
+          <div class="kpi-pro-progress-bar" id="kpi-bar-taux-realisation"
+               style="background:{% if taux_realisation < 30 %}var(--danger){% elif taux_realisation < 70 %}var(--warning){% else %}var(--success){% endif %};
+                      width:{{ [taux_realisation, 100]|min }}%;"></div>
+        </div>
+      </div>
+    </div>
+    <div class="kpi-pro kpi-deco-gray">
+      <div class="kpi-pro-content">
+        <p class="kpi-pro-label">Duree Engagement Moy.</p>
+        <p class="kpi-pro-value">
+          <span id="kpi-panier-moyen">{{ panier_moyen }}</span><small style="font-size:12px; font-weight:400; color:#888;"> mois</small>
+        </p>
+        <p class="kpi-pro-sub mt-1">Par contrat souscrit</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== LAYOUT PRINCIPAL ===== -->
+  <div class="main-layout">
+
+    <!-- FILTRES -->
+    {% call filters_panel() %}
+    <div class="filter-info-box">
+      <p class="filter-info-box-label">Filtres actifs</p>
+      <p class="filter-info-box-value" id="filtres-actifs-label">Aucun</p>
+    </div>
+    {% endcall %}
+
+    <!-- GRILLE GRAPHIQUES -->
+    <div class="charts-grid">
+
+      <!-- GRAPH 1 : Evolution journaliere — pleine largeur -->
+      <div class="chart-card chart-wide flip-card" onclick="flipCard(this)">
+        <div class="flip-card-inner">
+          <div class="flip-card-front">
+            <div class="chart-pro-title">
+              <span>EVOLUTION JOURNALIERE</span>
+              <span class="chart-pro-subtitle" id="label-moy-jour"></span>
+            </div>
+            <div class="chart-canvas-wrap"><canvas id="chart-evolution"></canvas></div>
+            <small class="flip-hint"> Cliquer pour voir l'analyse</small>
+          </div>
+          <div class="flip-card-back">
+            <div class="flip-back-title">Analyse</div>
+            <p class="flip-back-text" id="ia-evolution">Chargement de l'analyse...</p>
+            <small class="flip-hint" style="color:rgba(255,255,255,0.5)"> Cliquer pour revenir</small>
+          </div>
+        </div>
+      </div>
+
+      <!-- GRAPH 2 : Ventes par canal (quantité) -->
+      <div class="chart-card flip-card" onclick="flipCard(this)">
+        <div class="flip-card-inner">
+          <div class="flip-card-front">
+            <div class="chart-pro-title">
+VENTES PAR CANAL <small style="color:#888;">(quantité)</small>
+            </div>
+            <div class="chart-canvas-wrap"><canvas id="chart-canal"></canvas></div>
+            <small class="flip-hint"> Cliquer pour voir l'analyse</small>
+          </div>
+          <div class="flip-card-back">
+            <div class="flip-back-title">Analyse</div>
+            <p class="flip-back-text" id="ia-canal">Chargement de l'analyse...</p>
+            <small class="flip-hint" style="color:rgba(255,255,255,0.5)"> Cliquer pour revenir</small>
+          </div>
+        </div>
+      </div>
+
+      <!-- GRAPH 3 : Par famille -->
+      <div class="chart-card chart-tall flip-card" onclick="flipCard(this)">
+        <div class="flip-card-inner">
+          <div class="flip-card-front">
+            <div class="chart-pro-title">
+GROUPE CLIENT
+            </div>
+            <div class="chart-canvas-wrap" style="height:200px;"><canvas id="chart-famille"></canvas></div>
+            <div id="famille-legend" class="mt-2" style="font-size:10px; color:#555; line-height:1.8;"></div>
+            <small class="flip-hint"> Cliquer pour voir l'analyse</small>
+          </div>
+          <div class="flip-card-back">
+            <div class="flip-back-title">Analyse</div>
+            <p class="flip-back-text" id="ia-famille">Chargement de l'analyse...</p>
+            <small class="flip-hint" style="color:rgba(255,255,255,0.5)"> Cliquer pour revenir</small>
+          </div>
+        </div>
+      </div>
+
+      <!-- GRAPH 4 : Top 5 OFFRES (remplace Top 5 Vendeurs) -->
+      <div class="chart-card flip-card" onclick="flipCard(this)">
+        <div class="flip-card-inner">
+          <div class="flip-card-front">
+            <div class="chart-pro-title">
+TOP 5 OFFRES
+            </div>
+            <div class="top-list" id="top-offres-list">
+              <em style="font-size:11px; color:#888;">Chargement...</em>
+            </div>
+            <small class="flip-hint"> Cliquer pour voir l'analyse</small>
+          </div>
+          <div class="flip-card-back">
+            <div class="flip-back-title">Analyse</div>
+            <p class="flip-back-text" id="ia-top-offres">Chargement de l'analyse...</p>
+            <small class="flip-hint" style="color:rgba(255,255,255,0.5)"> Cliquer pour revenir</small>
+          </div>
+        </div>
+      </div>
+
+      <!-- GRAPH 5 : Objectif vs Realisation (piloté par filtre PERIODE global) -->
+      <div class="chart-card flip-card" onclick="flipCard(this)">
+        <div class="flip-card-inner">
+          <div class="flip-card-front">
+            <div class="chart-pro-title">
+              <span>OBJECTIF VS REALISATION</span>
+              <i class="bi bi-info-circle" style="font-size:0.8rem; cursor:help; opacity:0.6; margin-left:4px;"
+                 onclick="event.stopPropagation();"
+                 title="Les objectifs sont fixes au niveau ligne de produit dans le SI source, sans granularite famille/categorie/cible. Ce composant reflete donc la realisation globale par canal sur la periode selectionnee, independamment des filtres famille/categorie/cible."></i>
+            </div>
+            <div class="chart-canvas-wrap" style="height:220px;">
+              <canvas id="chart-objectif-canal"></canvas>
+            </div>
+            <small class="flip-hint"> Cliquer pour voir l'analyse</small>
+          </div>
+          <div class="flip-card-back">
+            <div class="flip-back-title">Analyse</div>
+            <p class="flip-back-text" id="ia-objectif">Chargement de l'analyse...</p>
+            <small class="flip-hint" style="color:rgba(255,255,255,0.5)"> Cliquer pour revenir</small>
+          </div>
+        </div>
+      </div>
+
+      <!-- GRAPH 6 : Répartition par ligne de produits (NOUVEAU) -->
+      <div class="chart-card flip-card" onclick="flipCard(this)">
+        <div class="flip-card-inner">
+          <div class="flip-card-front">
+            <div class="chart-pro-title">
+REPARTITION PAR LIGNE DE PRODUITS
+            </div>
+            <div class="chart-canvas-wrap"><canvas id="chart-ligne-produits"></canvas></div>
+            <small class="flip-hint"> Cliquer pour voir l'analyse</small>
+          </div>
+          <div class="flip-card-back">
+            <div class="flip-back-title">Analyse</div>
+            <p class="flip-back-text" id="ia-ligne-produits">Chargement de l'analyse...</p>
+            <small class="flip-hint" style="color:rgba(255,255,255,0.5)"> Cliquer pour revenir</small>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Texte synthèse (caché, chargé dans la modale) -->
+  <p id="ai-synthese-global" style="display:none;">
+    <em>Analyse en cours...</em>
+  </p>
+
+</div>
+
+<!-- ===== FLIP CARD CSS ===== -->
+<style>
+.flip-card { perspective: 1000px; cursor: pointer; }
+.flip-card-inner { position: relative; width: 100%; height: 100%; min-height: 200px;
+    transition: transform 0.55s; transform-style: preserve-3d; }
+.flip-card.flipped .flip-card-inner { transform: rotateY(180deg); }
+.flip-card-front, .flip-card-back {
+    position: absolute; width: 100%; height: 100%; backface-visibility: hidden;
+    -webkit-backface-visibility: hidden; padding: 0;
+}
+.flip-card-front { background: transparent; display: flex; flex-direction: column; }
+.flip-card-back {
+    background: linear-gradient(135deg, #1A1A2E 0%, #16213E 100%);
+    color: white; backface-visibility: hidden; transform: rotateY(180deg);
+    border-radius: 12px; padding: 16px 20px; display: flex; flex-direction: column; overflow: hidden;
+}
+.flip-back-title { font-size: 12px; font-weight: 700; margin-bottom: 10px; flex-shrink: 0; }
+.flip-back-text { font-size: 11px; line-height: 1.65; color: rgba(255,255,255,0.88);
+    flex: 1; overflow-y: auto; margin-bottom: 8px; }
+.flip-hint { display: block; font-size: 10px; color: rgba(255,255,255,0.5);
+    text-align: right; flex-shrink: 0; margin-top: auto; }
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+var _sparkline = null;
+var _periodeKeys = [];
+
+document.addEventListener('DOMContentLoaded', function () {
+    /* autoSelectFirst=true : selectionne le mois le plus recent par defaut */
+    loadStandardFilters(applyFilters, true);
+    window.queueAI('/api/interpret/dashboard-global', 'ai-synthese-global');
+});
+
+// ===== FLIP CARD =====
+function flipCard(card) {
+    var wasFlipped = card.classList.contains('flipped');
+    card.classList.toggle('flipped');
+    if (!wasFlipped) {
+        // Charger l'interprétation IA quand on retourne la carte
+        var iaId = card.querySelector('[id^="ia-"]');
+        if (iaId && iaId.textContent.includes('Chargement')) {
+            var cardType = iaId.id.replace('ia-', '');
+            var endpoints = {
+                'evolution': '/api/interpret/dashboard-global',
+                'canal': '/api/interpret/canal-repartition',
+                'famille': '/api/interpret/produits-top5',
+                'top-offres': '/api/interpret/produits-top5',
+                'objectif': '/api/interpret/canal-objectif',
+                'ligne-produits': '/api/interpret/produits-global',
+            };
+            var ep = endpoints[cardType];
+            if (ep) window.queueAI(ep, iaId.id);
+        }
+    }
+}
+
+/* loadFilterOptions et loadMoisDisponibles remplacees par loadStandardFilters (base.html) */
+
+
+// ===== FILTRES — SOURCE UNIQUE DE VÉRITÉ =====
+var _activeFilters = {};
+var _chartInstances = {};
+
+function applyFilters() {
+    _activeFilters = {
+        periode:   document.getElementById('f-periode')   ? document.getElementById('f-periode').value   : '',
+        canal:     document.getElementById('f-canal')     ? document.getElementById('f-canal').value     : '',
+        famille:   document.getElementById('f-famille')   ? document.getElementById('f-famille').value   : '',
+        categorie: document.getElementById('f-categorie') ? document.getElementById('f-categorie').value : '',
+        cible:     document.getElementById('f-cible')     ? document.getElementById('f-cible').value     : '',
+    };
+
+    var actifs = Object.keys(_activeFilters).filter(function(k){ return _activeFilters[k]; });
+    var lbl = document.getElementById('filtres-actifs-label');
+    var labels = { periode: 'Période', canal: 'Canal', famille: 'Famille', categorie: 'Catégorie', cible: 'Cible' };
+    if (lbl) lbl.textContent = actifs.length
+        ? actifs.map(function(k){ return (labels[k]||k) + ' : ' + _activeFilters[k]; }).join(' • ')
+        : 'Aucun';
+
+    // Badge periode
+    var sel = document.getElementById('f-periode');
+    if (sel && sel.options[sel.selectedIndex]) {
+        var badge = document.getElementById('header-periode-label');
+        if (badge) badge.innerHTML = '' + sel.options[sel.selectedIndex].text;
+    }
+
+    // Un seul fetch pour toutes les cartes
+    var params = new URLSearchParams();
+    Object.keys(_activeFilters).forEach(function(k){
+        if (_activeFilters[k]) params.set(k, _activeFilters[k]);
+    });
+
+    fetch('/api/performance/data?' + params.toString(), { credentials: 'same-origin' })
+        .then(function(r){ return r.json(); })
+        .then(function(d){
+            renderKpis(d.kpis || {});
+            var jourVals = (d.evolution && d.evolution.jours || []).map(function(j){ return j.nb_ventes; });
+            if (jourVals.length) {
+                var sCtx = document.getElementById('sparkline-ventes');
+                if (sCtx) {
+                    if (_sparkline) _sparkline.destroy();
+                    _sparkline = new Chart(sCtx, {
+                        type: 'line',
+                        data: { labels: jourVals.map(function(_,i){ return i+1; }),
+                            datasets: [{ data: jourVals, borderColor: PALETTE.orange,
+                                backgroundColor: PALETTE.orange+'14', borderWidth: 1.5,
+                                pointRadius: 0, tension: 0.4, fill: true }] },
+                        options: { responsive: true, maintainAspectRatio: false,
+                            plugins: { legend:{display:false}, tooltip:{enabled:false} },
+                            scales: { x:{display:false}, y:{display:false} }, animation:{duration:600} }
+                    });
+                }
+            }
+            renderEvolution(d.evolution || {});
+            renderCanal(d.ventes_canal || {});
+            renderFamille(d.ventes_famille || {});
+            renderTop5Offres(d.top5_offres || []);
+            renderObjectif(d.objectif_canal || {});
+            renderLigneProduits(d.ligne_produits || []);
+        })
+        .catch(function(e){ console.error('[Filtres]', e); });
+}
+
+function resetFilters() {
+    ['f-periode','f-canal','f-famille','f-categorie','f-cible'].forEach(function(id){
+        var el = document.getElementById(id);
+        if (el) el.selectedIndex = 0;
+    });
+    loadStandardFilters(applyFilters);
+}
+
+// ===== RENDER FUNCTIONS (séparent le rendu des données) =====
+
+function renderKpis(kpis) {
+    function setEl(id, v){ var e=document.getElementById(id); if(e) e.textContent=v; }
+    function setW(id, pct){ var e=document.getElementById(id); if(e) e.style.width=Math.min(pct,100)+'%'; }
+    if (kpis.total_ventes !== undefined)
+        setEl('kpi-total-ventes', (kpis.total_ventes||0).toLocaleString('fr-FR'));
+    if (kpis.taux_paiement !== undefined) {
+        setEl('kpi-taux-paiement', (kpis.taux_paiement||0).toFixed(1)+'%');
+        setW('kpi-bar-paiement', kpis.taux_paiement||0);
+    }
+    if (kpis.taux_realisation !== undefined) {
+        setEl('kpi-taux-realisation', (kpis.taux_realisation||0).toFixed(1)+'%');
+        var barR = document.getElementById('kpi-bar-taux-realisation');
+        if (barR) {
+            var t = kpis.taux_realisation || 0;
+            barR.style.width = Math.min(t, 100) + '%';
+            barR.style.background = t < 30 ? 'var(--danger)' : (t < 70 ? 'var(--warning)' : 'var(--success)');
+        }
+    }
+    if (kpis.panier_moyen !== undefined)
+        setEl('kpi-panier-moyen', (kpis.panier_moyen||0).toFixed(1));
+}
+
+function renderEvolution(d) {
+    var jours = d.jours || [];
+    if (!jours.length) return;
+    var ctx = document.getElementById('chart-evolution');
+    if (!ctx) return;
+    var labels = jours.map(function(j){ return j.jour; });
+    var vals   = jours.map(function(j){ return j.nb_ventes; });
+    var moy    = d.moyenne || 0;
+    /* C2 — gradient par intensite : jours forts = orange fonce, faibles = orange clair */
+    var maxVal = vals.reduce(function(a,b){ return Math.max(a,b); }, 1);
+    var gradColors = vals.map(function(v) {
+        var r = maxVal > 0 ? v / maxVal : 0;
+        if (r > 0.75) return 'rgba(229, 92, 0, 1)';
+        if (r > 0.50) return 'rgba(255, 102, 0, 1)';
+        if (r > 0.25) return 'rgba(255, 133, 51, 1)';
+        return 'rgba(255, 163, 102, 1)';
+    });
+    var moyLabel = document.getElementById('label-moy-jour');
+    if (moyLabel) moyLabel.textContent = 'Moy : ' + moy.toLocaleString('fr-FR') + '/j';
+    if (_chartInstances.evolution) _chartInstances.evolution.destroy();
+    _chartInstances.evolution = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [
+                { label: 'Ventes', data: vals,
+                  backgroundColor: gradColors,
+                  borderRadius: 4 },
+                { label: 'Moyenne ' + moy.toLocaleString('fr-FR') + '/j',
+                  data: vals.map(function(){ return moy; }),
+                  type: 'line', borderColor: '#000000', borderDash: [5,4],
+                  borderWidth: 1.5, pointRadius: 0, fill: false }
+            ]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: {
+                legend: { display: true, position: 'top', labels: { font:{size:10}, usePointStyle:true, boxWidth:12 } },
+                datalabels: { display: false },
+                tooltip: { callbacks: { label: function(c){
+                    if (c.datasetIndex === 0) return ' ' + (c.parsed.y||0).toLocaleString('fr-FR') + ' ventes';
+                    return ' Moy : ' + moy.toLocaleString('fr-FR') + '/j';
+                }}}
+            },
+            scales: {
+                x: { ticks: { color:'#888', font:{size:9}, maxRotation:0,
+                              callback: function(v,i){ return (i+1) % 3 === 1 ? labels[i] : ''; } },
+                     grid: { color:'#F4F4F4' } },
+                y: { beginAtZero: true, ticks: { color:'#888', font:{size:9},
+                     callback: function(v){ return v.toLocaleString('fr-FR'); } },
+                     grid: { color:'#F4F4F4' } }
+            }
+        }
+    });
+}
+
+function renderCanal(data) {
+    if (!data.canaux || !data.canaux.length) return;
+    var ctx = document.getElementById('chart-canal');
+    if (!ctx) return;
+    if (_chartInstances.canal) _chartInstances.canal.destroy();
+    _chartInstances.canal = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: data.canaux,
+            /* C3 — orange dominant + noir + couleurs secondaires (PDF Orange) */
+            datasets: [{ data: data.nb_ventes,
+                backgroundColor: (function(){
+                    var pal=['#FF6600','#000000','#4BB4E6','#50BE87','#A885D8','#FFD200','#FFB4E6','#424242'];
+                    return data.canaux.map(function(_,i){ return pal[i%pal.length]; });
+                })(),
+                borderRadius: 4, barThickness: 18 }]
+        },
+        options: {
+            indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                datalabels: { display: true, anchor: 'end', align: 'right',
+                    color: '#333', font: { size: 9, weight: '700' },
+                    formatter: function(v){ return v.toLocaleString('fr-FR'); }
+                },
+                tooltip: { callbacks: { label: function(c){ return ' ' + c.parsed.x.toLocaleString('fr-FR') + ' contrats'; }}}
+            },
+            scales: {
+                x: { ticks: { color:'#888', font:{size:9} }, grid:{color:'#F0F0F0'} },
+                y: { ticks: { color:'#333', font:{size:10, weight:'600'} }, grid:{display:false} }
+            }
+        },
+        plugins: [ChartDataLabels]
+    });
+}
+
+function renderFamille(data) {
+    if (!data.familles || !data.familles.length) return;
+    var ctx = document.getElementById('chart-famille');
+    if (!ctx) return;
+    var total  = data.nb_ventes.reduce(function(a,b){ return a+b; }, 0);
+    var centerPlugin = {
+        id: 'center', afterDraw: function(chart){
+            var w=chart.width, h=chart.height, c2=chart.ctx;
+            c2.save(); c2.font='bold 13px Inter,sans-serif'; c2.fillStyle='#1A1A1A';
+            c2.textAlign='center'; c2.textBaseline='middle';
+            c2.fillText(total.toLocaleString('fr-FR'), w/2, h/2-7);
+            c2.font='9px Inter,sans-serif'; c2.fillStyle='#888';
+            c2.fillText('contrats', w/2, h/2+8); c2.restore();
+        }
+    };
+    if (_chartInstances.famille) _chartInstances.famille.destroy();
+    _chartInstances.famille = new Chart(ctx, {
+        type: 'doughnut', plugins: [centerPlugin, ChartDataLabels],
+        data: {
+            labels: data.familles,
+            /* C4 — orange dominant + noir + secondaires (PDF Orange) */
+            datasets: [{ data: data.nb_ventes,
+                backgroundColor: (function(){
+                    var pal=['#FF6600','#000000','#4BB4E6','#FFD200','#50BE87','#A885D8','#FFB4E6','#424242'];
+                    return data.familles.map(function(_,i){ return pal[i%pal.length]; });
+                })(),
+                borderWidth: 2, borderColor: '#fff' }]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false, cutout: '60%',
+            plugins: {
+                legend: { display: false },
+                datalabels: {
+                    display: function(c){ return total > 0 && (c.dataset.data[c.dataIndex]/total*100) >= 3; },
+                    formatter: function(v){ return total>0 ? Math.round(v/total*100)+'%' : ''; },
+                    color: '#fff', font: { size: 10, weight: '700' }
+                },
+                tooltip: { callbacks: { label: function(c){
+                    return ' ' + data.familles[c.dataIndex] + ' : ' +
+                        (data.nb_ventes[c.dataIndex]||0).toLocaleString('fr-FR') +
+                        ' (' + data.pourcentages[c.dataIndex] + '%)';
+                }}}}
+        }
+    });
+    var leg = document.getElementById('famille-legend');
+    if (leg) {
+        leg.innerHTML = data.familles.map(function(f,i){
+            var palFam=['#FF6600','#000000','#4BB4E6','#FFD200','#50BE87','#A885D8','#FFB4E6','#424242'];
+            var c = palFam[i%palFam.length];
+            return '<span style="display:block;"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:'+c+';margin-right:6px;"></span>' + f +
+                ' <strong style="color:#FF6600;">' + data.pourcentages[i] + '%</strong>' +
+                ' <span style="color:#888;">(' + (data.nb_ventes[i]||0).toLocaleString('fr-FR') + ')</span></span>';
+        }).join('');
+    }
+}
+
+function renderTop5Offres(rows) {
+    var ul = document.getElementById('top-offres-list');
+    if (!ul) return;
+    if (!rows.length) { ul.innerHTML = '<em style="font-size:11px;color:#888;">Aucune donnee</em>'; return; }
+    var rClasses = ['r1','r2','r3','rn','rn'];
+    ul.innerHTML = rows.map(function(v,i){
+        var nom = v.offre || v.produit || 'N/A';
+        var qte = (v.total_vendu||0).toLocaleString('fr-FR');
+        return '<div class="top-list-item ' + (i<2 ? 'rank-'+(i+1)+'-item' : '') + '">' +
+            '<div class="rank-circle ' + rClasses[i] + '">' + (i+1) + '</div>' +
+            '<div><div class="top-list-name">' + nom + '</div>' +
+            '<div class="top-list-sub">offre</div></div>' +
+            '<div class="top-list-value">' + qte + '</div></div>';
+    }).join('');
+}
+
+function renderObjectif(data) {
+    if (!data.canaux || !data.canaux.length) return;
+    var ctx = document.getElementById('chart-objectif-canal');
+    if (!ctx) return;
+    var barColors = data.taux.map(function(t){ return PALETTE.statut(t); });
+    if (_chartInstances.objectif) _chartInstances.objectif.destroy();
+    _chartInstances.objectif = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: data.canaux,
+            datasets: [
+                /* C6 — Noir (objectif) + Orange (realise) + ligne orange */
+                { label: 'Objectif', data: data.objectifs, backgroundColor: '#000000', borderRadius: 3 },
+                { label: 'Realise',  data: data.realisations, backgroundColor: '#FF6600', borderRadius: 3 },
+                { label: 'Taux (%)', data: data.taux, type: 'line', yAxisID: 'y1',
+                  borderColor: '#FF6600', backgroundColor: 'transparent',
+                  tension: 0.3, pointRadius: 5, pointBackgroundColor: barColors,
+                  pointBorderColor: '#fff', pointBorderWidth: 1 }
+            ]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false, layout: { padding: { top: 20 } },
+            plugins: {
+                legend: { position: 'top', labels: { font:{size:10}, usePointStyle: true } },
+                datalabels: {
+                    display: function(ctx2){ return ctx2.datasetIndex < 2; },
+                    anchor: 'end', align: 'top', color: '#555', font: { size: 8 },
+                    formatter: function(v){ return v > 0 ? v.toLocaleString('fr-FR') : ''; }
+                },
+                tooltip: { callbacks: { label: function(c){
+                    if (c.dataset.yAxisID==='y1') return ' Taux : '+c.parsed.y+'%';
+                    return ' '+c.dataset.label+' : '+c.parsed.y.toLocaleString('fr-FR');
+                }}}
+            },
+            scales: {
+                x: { ticks:{color:'#555',font:{size:10},maxRotation:-45}, grid:{display:false} },
+                y: { beginAtZero:true, grid:{color:'#F0F0F0'}, ticks:{color:'#888',font:{size:9}} },
+                y1: { position:'right', beginAtZero:true, max:120, grid:{drawOnChartArea:false},
+                      ticks:{color:'#FF6600',font:{size:9},callback:function(v){return v+'%';}} }
+            }
+        },
+        plugins: [ChartDataLabels]
+    });
+}
+
+function renderLigneProduits(data) {
+    if (!data.length) return;
+    var ctx = document.getElementById('chart-ligne-produits');
+    if (!ctx) return;
+    var lignes = data.map(function(d){ return d.ligne; });
+    var vals   = data.map(function(d){ return d.nb_ventes; });
+    var pcts   = data.map(function(d){ return d.pourcentage; });
+    if (_chartInstances.ligne) _chartInstances.ligne.destroy();
+    _chartInstances.ligne = new Chart(ctx, {
+        type: 'bar',
+        data: { labels: lignes, datasets: [{ data: vals,
+            backgroundColor: (function(){
+                var pal=['#FF6600','#000000','#4BB4E6','#FFD200','#50BE87','#A885D8','#FFB4E6','#424242'];
+                return lignes.map(function(_,i){ return pal[i%pal.length]; });
+            })(),
+            borderRadius: 4 }] },
+        options: {
+            indexAxis: 'y',
+            responsive: true, maintainAspectRatio: false,
+            layout: { padding: { right: 50 } },
+            plugins: {
+                legend: { display: false },
+                datalabels: { display: true, anchor:'end', align:'right', color:'#333', font:{size:9, weight:'600'},
+                    formatter: function(v,c){ return pcts[c.dataIndex]+'%'; }
+                },
+                tooltip: { callbacks: { label: function(c){
+                    return ' '+c.parsed.x.toLocaleString('fr-FR')+' ('+pcts[c.dataIndex]+'%)';
+                }}}
+            },
+            scales: {
+                x: { ticks:{color:'#888',font:{size:9}}, grid:{color:'#F0F0F0'} },
+                y: { ticks:{color:'#333',font:{size:9},maxRotation:0}, grid:{display:false} }
+            }
+        },
+        plugins: [ChartDataLabels]
+    });
+}
+</script>
+{% endblock %}

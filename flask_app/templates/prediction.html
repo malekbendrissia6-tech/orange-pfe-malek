@@ -1,0 +1,412 @@
+{% extends "base.html" %}
+{% from "macros.html" import filters_panel %}
+{% block title %}Prediction de cloture — Orange Tunisie{% endblock %}
+
+{% block head %}
+<style>
+  /* Prediction = accent VIOLET */
+  .dashboard-header { border-left-color: var(--purple, #9C27B0) !important; }
+  .header-logo      { background: var(--purple, #9C27B0) !important; }
+  .header-info-badge{ border-color: var(--purple, #9C27B0) !important; color: var(--purple, #9C27B0) !important; background: var(--purple-pale, #F3E5F5) !important; }
+  .header-action-btn{ border-color: var(--purple, #9C27B0) !important; color: var(--purple, #9C27B0) !important; }
+  .header-action-btn:hover{ background: var(--purple, #9C27B0) !important; color: #fff !important; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-pro">
+
+  <!-- ═══════════════════════════════════════ HEADER ══ -->
+  <div class="dashboard-header">
+    <div class="d-flex align-items-center gap-3">
+
+      <div>
+        <h1 class="h4 fw-bold mb-0" style="color:#1A1A1A;">Prediction de Cloture Mensuelle</h1>
+        <p class="mb-0 small" style="color:#4A4A4A;">
+          Comparatif 8 algorithmes &mdash; Meilleur modele : Prophet (MAPE {{ mape_meilleur }}%)
+        </p>
+      </div>
+    </div>
+    <div class="d-flex align-items-center gap-2">
+      {% if alerte_type == 'success' %}
+        <span class="badge bg-success fs-6 px-3 py-2">
+Projection favorable
+        </span>
+      {% else %}
+        <span class="badge bg-danger fs-6 px-3 py-2">
+Alerte objectif
+        </span>
+      {% endif %}
+      <button class="header-action-btn" onclick="ouvrirSynthese('ai-pred-global-text')" title="Synthese">Synthèse</button>
+      <a href="{{ url_for('main.index') }}" class="header-action-btn" title="Accueil" style="text-decoration:none;">Accueil</a>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════ 5 KPIs ══ -->
+  <div class="kpis-grid" style="grid-template-columns: repeat(5, 1fr);">
+
+    <!-- KPI 1 : Realise a ce jour -->
+    <div class="kpi-pro kpi-deco-orange">
+      <div class="kpi-body">
+        <div class="kpi-label">Realise a ce jour</div>
+        <div class="kpi-value" id="kv-realise">{{ "{:,}".format(realise_actuel) }}</div>
+        <div class="kpi-sub">ventes enregistrees</div>
+      </div>
+    </div>
+
+    <!-- KPI 2 : Objectif du mois -->
+    <div class="kpi-pro kpi-deco-black">
+      <div class="kpi-body">
+        <div class="kpi-label">Objectif du mois</div>
+        <div class="kpi-value text-info" id="kv-objectif">{{ "{:,.0f}".format(objectif_mensuel) }}</div>
+        <div class="kpi-sub">contrats cibles</div>
+      </div>
+    </div>
+
+    <!-- KPI 3 : Atterrissage -->
+    <div class="kpi-pro kpi-deco-blue">
+      <div class="kpi-body">
+        <div class="kpi-label">Atterrissage <small style="color:#888;">/j</small></div>
+        <div class="kpi-value" style="color:#50BE87;" id="kv-atterrissage">{{ atterrissage }}</div>
+        <div class="kpi-sub">moy. ventes / {{ nb_jours_mois }} jours</div>
+      </div>
+    </div>
+
+    <!-- KPI 4 : Prediction Prophet -->
+    <div class="kpi-pro kpi-deco-purple">
+      <div class="kpi-body">
+        <div class="kpi-label">Prediction cloture</div>
+        <div class="kpi-value" style="color:#085EBD" id="kv-prediction">{{ "{:,}".format(prediction_cloture) }}</div>
+        <div class="kpi-sub">ventes prevues (Prophet)</div>
+      </div>
+    </div>
+
+    <!-- KPI 5 : MAPE -->
+    <div class="kpi-pro kpi-deco-green">
+      <div class="kpi-body">
+        <div class="kpi-label">Precision MAPE</div>
+        <div class="kpi-value text-success" id="kv-mape">{{ mape_meilleur }}%</div>
+        <div class="kpi-sub">Prophet — erreur absolue</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ═══════════════════════════════════════ MAIN LAYOUT ══ -->
+  <div class="main-layout">
+
+    <!-- FILTRES -->
+    {% call filters_panel(show_algo=true) %}
+    <div class="mt-4 p-3 rounded border
+      {% if alerte_type == 'success' %}border-success bg-success bg-opacity-10{% else %}border-danger bg-danger bg-opacity-10{% endif %}">
+      <div class="fw-bold small {% if alerte_type == 'success' %}text-success{% else %}text-danger{% endif %} mb-1">
+        Alerte metier
+      </div>
+      <div class="small text-muted">{{ alerte_msg }}</div>
+    </div>
+    {% endcall %}
+
+    <!-- CHARTS -->
+    <div class="charts-grid" style="grid-template-columns: 1fr 1fr; grid-template-rows: auto auto;">
+
+      <!-- Chart 1 : Evolution + Projection - échelle journalière 1→30/31 -->
+      <div class="chart-card chart-wide flip-card" style="grid-column: span 2;" onclick="flipCard(this)">
+        <div class="flip-card-inner">
+          <div class="flip-card-front">
+            <div class="chart-header">
+              <span class="chart-title">
+Evolution reelle + Projection
+                <small style="color:#888;">(echelle journaliere — 1 a {{ nb_jours_mois }} jours)</small>
+              </span>
+              <span class="badge bg-light text-dark border small">Prophet &mdash; MAPE {{ mape_meilleur }}%</span>
+            </div>
+            <div style="position:relative;height:320px;">
+              <canvas id="chart-projection"></canvas>
+            </div>
+            <div class="d-flex gap-3 mt-2 justify-content-center flex-wrap">
+              <span class="small"><span style="display:inline-block;width:20px;height:3px;background:#FF7900;vertical-align:middle;margin-right:4px;"></span>Réalisé</span>
+              <span class="small"><span style="display:inline-block;width:20px;height:3px;background:#9C27B0;vertical-align:middle;margin-right:4px;"></span>Projection Prophet</span>
+              <span class="small"><span style="display:inline-block;width:20px;height:2px;border-top:2px dashed #FF7900;vertical-align:middle;margin-right:4px;"></span>Réalisé (comparatif)</span>
+              <span class="small"><span style="display:inline-block;width:20px;height:2px;border-top:2px dashed #F44336;vertical-align:middle;margin-right:4px;"></span>Objectif/j</span>
+            </div>
+            <small class="flip-hint"> Cliquer pour voir l'analyse</small>
+          </div>
+          <div class="flip-card-back">
+            <div class="flip-back-title">Analyse — Projection</div>
+            <p class="flip-back-text" id="ia-pred-proj">Chargement de l'analyse...</p>
+            <small class="flip-hint" style="color:rgba(255,255,255,0.5)"> Retourner</small>
+          </div>
+        </div>
+      </div>
+
+      <!-- Chart 2 : Tableau comparatif algorithmes -->
+      <div class="chart-card" style="grid-column: span 2;">
+        <div class="chart-header">
+          <span class="chart-title">
+Comparatif des 8 algorithmes
+          </span>
+          <span class="badge bg-orange text-white small">Classe par precision (MAPE)</span>
+        </div>
+        <div class="table-responsive">
+          <table id="algo-table" class="table table-hover table-sm mb-0 align-middle">
+            <thead style="background:#f8f9fa;">
+              <tr>
+                <th class="text-center" style="width:50px">Rang</th>
+                <th>Algorithme</th>
+                <th>Type</th>
+                <th class="text-center">MAPE</th>
+                <th class="text-center">MAE</th>
+                <th style="width:200px">Precision</th>
+                <th class="text-center">Statut</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for algo in algorithmes %}
+              <tr data-algo-nom="{{ algo.nom | lower }}" {% if algo.rang == 1 %}style="background:#fff8f0;"{% endif %}>
+                <td class="text-center">
+                  {% if algo.rang == 1 %}<span class="rank-circle r1">1</span>
+                  {% elif algo.rang == 2 %}<span class="rank-circle r2">2</span>
+                  {% elif algo.rang == 3 %}<span class="rank-circle r3">3</span>
+                  {% else %}<span class="rank-circle rn">{{ algo.rang }}</span>{% endif %}
+                </td>
+                <td class="fw-semibold">
+                  {{ algo.nom }}{% if algo.rang == 1 %}{% endif %}
+                </td>
+                <td><span class="badge bg-light text-dark border">{{ algo.type }}</span></td>
+                <td class="text-center fw-bold
+                  {% if algo.mape < 5 %}text-success{% elif algo.mape < 7 %}text-warning{% else %}text-danger{% endif %}">
+                  {{ algo.mape }}%
+                </td>
+                <td class="text-center text-muted">{{ algo.mae }}</td>
+                <td>
+                  <div class="progress" style="height:8px;">
+                    {% set pct = [100 - (algo.mape * 7)|round|int, 5]|max %}
+                    <div class="progress-bar {% if algo.mape < 5 %}bg-success{% elif algo.mape < 7 %}bg-warning{% else %}bg-danger{% endif %}"
+                         style="width:{{ pct }}%"></div>
+                  </div>
+                </td>
+                <td class="text-center">
+                  {% if algo.rang == 1 %}<span class="badge bg-success">Meilleur</span>
+                  {% elif algo.rang <= 3 %}<span class="badge bg-primary">{{ algo.statut }}</span>
+                  {% else %}<span class="badge bg-secondary">{{ algo.statut }}</span>{% endif %}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div id="ai-pred-global-text" style="display:none;">Chargement de l'analyse...</div>
+
+</div>
+
+<!-- Flip CSS -->
+<style>
+.flip-card { perspective: 1000px; cursor: pointer; }
+.flip-card-inner { position: relative; width: 100%; height: 100%; min-height: 200px;
+    transition: transform 0.55s; transform-style: preserve-3d; }
+.flip-card.flipped .flip-card-inner { transform: rotateY(180deg); }
+.flip-card-front, .flip-card-back {
+    position: absolute; width: 100%; height: 100%; backface-visibility: hidden;
+    -webkit-backface-visibility: hidden; }
+.flip-card-front { background: transparent; display: flex; flex-direction: column; }
+.flip-card-back {
+    background: linear-gradient(135deg, #1A1A2E 0%, #16213E 100%);
+    color: white; transform: rotateY(180deg);
+    border-radius: 12px; padding: 16px 20px; display: flex; flex-direction: column; overflow: hidden;
+}
+.flip-back-title { font-size: 12px; font-weight: 700; margin-bottom: 10px; flex-shrink: 0; }
+.flip-back-text { font-size: 11px; line-height: 1.65; color: rgba(255,255,255,0.88);
+    flex: 1; overflow-y: auto; margin-bottom: 8px; }
+.flip-hint { display: block; font-size: 10px; color: rgba(255,255,255,0.5);
+    text-align: right; flex-shrink: 0; margin-top: auto; }
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+var chartProjection = null;
+var NB_JOURS = {{ nb_jours_mois }};
+
+function flipCard(card) {
+    var wasFlipped = card.classList.contains('flipped');
+    card.classList.toggle('flipped');
+    if (!wasFlipped) {
+        var iaEl = card.querySelector('[id^="ia-"]');
+        if (iaEl && iaEl.textContent.includes('Chargement')) {
+            window.queueAI('/api/interpret/prediction-global', iaEl.id);
+        }
+    }
+}
+
+function buildProjectionChart(data) {
+    /* ── KPI cards ── */
+    var realise      = data.realise_actuel     || 0;
+    var objM         = data.objectif_mensuel   || 0;
+    var pred         = data.prediction_cloture || 0;
+    var jours        = data.jours_mois         || NB_JOURS;
+    var mape         = data.mape_prophet       || 0;
+    var jourCoupure  = data.jour_coupure       || 0;
+    var projJours    = data.projection_jours   || [];
+    var attr         = jours > 0 ? (realise / jours).toFixed(1) : 0;
+    function setEl(id, v){ var e=document.getElementById(id); if(e) e.textContent=v; }
+    setEl('kv-realise',      realise.toLocaleString('fr-FR'));
+    setEl('kv-objectif',     Math.round(objM).toLocaleString('fr-FR'));
+    setEl('kv-atterrissage', attr);
+    setEl('kv-prediction',   pred.toLocaleString('fr-FR'));
+    setEl('kv-mape',         mape + '%');
+
+    /* ── Graphique ── */
+    var ej = data.evolution_jours || [];
+    var nb = jours;
+    var labels = [];
+    for (var i = 1; i <= nb; i++) labels.push('J' + i);
+
+    /* Courbe 1 — Orange plein : Réalisé (train, J1 → jour_coupure) */
+    var trainData = new Array(nb).fill(null);
+    ej.forEach(function(r) {
+        var d = parseInt(r.jour, 10);
+        if (d <= jourCoupure) trainData[d - 1] = r.nb_ventes;
+    });
+
+    /* Courbe 2 — Violet plein : Projection Prophet (jour_coupure → fin) */
+    var prophetData = new Array(nb).fill(null);
+    /* pont visuel : dupliquer le dernier point du train */
+    if (jourCoupure > 0 && trainData[jourCoupure - 1] !== null)
+        prophetData[jourCoupure - 1] = trainData[jourCoupure - 1];
+    projJours.forEach(function(r) {
+        var d = parseInt(r.jour, 10);
+        if (d > 0 && d <= nb) prophetData[d - 1] = r.nb_ventes;
+    });
+
+    /* Courbe 3 — Orange pointillé : Réalisé comparatif (jour_coupure+1 → fin) */
+    var comparatifData = new Array(nb).fill(null);
+    if (jourCoupure > 0 && trainData[jourCoupure - 1] !== null)
+        comparatifData[jourCoupure - 1] = trainData[jourCoupure - 1];
+    ej.forEach(function(r) {
+        var d = parseInt(r.jour, 10);
+        if (d > jourCoupure && d <= nb) comparatifData[d - 1] = r.nb_ventes;
+    });
+
+    /* Objectif journalier */
+    var objJour = objM > 0 ? Math.round(objM / nb) : null;
+    var objData = objJour ? new Array(nb).fill(objJour) : null;
+
+    var allVals = trainData.concat(prophetData, comparatifData)
+        .filter(function(v){ return v !== null; });
+    var maxVal = allVals.length ? Math.max.apply(null, allVals) : 100;
+
+    var ctx = document.getElementById('chart-projection');
+    if (!ctx) return;
+    if (chartProjection) chartProjection.destroy();
+
+    var datasets = [
+        { label: 'Réalisé', data: trainData,
+          borderColor: '#FF7900', backgroundColor: '#FF790020',
+          borderWidth: 2.5, pointRadius: 2, fill: true, tension: 0.35 },
+        { label: 'Projection Prophet', data: prophetData,
+          borderColor: '#9C27B0', backgroundColor: '#9C27B015',
+          borderWidth: 3, pointRadius: 2, fill: false, tension: 0.35 },
+        { label: 'Réalisé (comparatif)', data: comparatifData,
+          borderColor: '#FF7900', borderWidth: 2, borderDash: [6, 4],
+          pointRadius: 2, backgroundColor: 'transparent', fill: false, tension: 0.35 },
+    ];
+    if (objData) {
+        datasets.push({ label: 'Objectif/j', data: objData,
+            borderColor: '#F44336', borderWidth: 1.5, borderDash: [3, 3],
+            pointRadius: 0, fill: false });
+    }
+
+    chartProjection = new Chart(ctx, {
+        type: 'line',
+        data: { labels: labels, datasets: datasets },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: {
+                legend: { display: true, position: 'top',
+                          labels: { font:{size:10}, usePointStyle:true } },
+                tooltip: { callbacks: { label: function(c){
+                    return c.dataset.label + ' : ' +
+                        (c.parsed.y || 0).toLocaleString('fr-FR') + ' ventes';
+                }}}
+            },
+            scales: {
+                x: { grid:{color:'#e9ecef'},
+                     ticks:{font:{size:9},color:'#888',
+                            callback:function(v,i){ return (i+1)%3===1 ? labels[i] : ''; }} },
+                y: { beginAtZero: true, max: Math.ceil(maxVal * 1.25),
+                     grid:{color:'#e9ecef'},
+                     ticks:{callback:function(v){ return v.toLocaleString('fr-FR'); },
+                            font:{size:10}} }
+            }
+        }
+    });
+}
+
+function loadPredictionData() {
+    var periode   = document.getElementById('f-periode')   ? document.getElementById('f-periode').value   : '';
+    var canal     = document.getElementById('f-canal')     ? document.getElementById('f-canal').value     : '';
+    var famille   = document.getElementById('f-famille')   ? document.getElementById('f-famille').value   : '';
+    var categorie = document.getElementById('f-categorie') ? document.getElementById('f-categorie').value : '';
+    var cible     = document.getElementById('f-cible')     ? document.getElementById('f-cible').value     : '';
+    var algo      = document.getElementById('f-algo')      ? document.getElementById('f-algo').value      : 'prophet';
+    var params = [];
+    if (periode)   params.push('periode='   + encodeURIComponent(periode));
+    if (canal)     params.push('canal='     + encodeURIComponent(canal));
+    if (famille)   params.push('famille='   + encodeURIComponent(famille));
+    if (categorie) params.push('categorie=' + encodeURIComponent(categorie));
+    if (cible)     params.push('cible='     + encodeURIComponent(cible));
+    if (algo && algo !== 'prophet') params.push('algo=' + encodeURIComponent(algo));
+    var url = '/api/prediction/evolution' + (params.length ? '?' + params.join('&') : '');
+    fetch(url, { credentials: 'same-origin' })
+        .then(function (r) { return r.json(); })
+        .then(function (data) { buildProjectionChart(data); })
+        .catch(function () {});
+}
+
+/* loadPredFilterOptions remplacee par loadStandardFilters (base.html) */
+
+var _algoKeyMap = { 'prophet': 'prophet', 'xgboost': 'xgboost', 'rf': 'random forest', 'lstm': 'lstm' };
+function highlightAlgo(val) {
+    var key = _algoKeyMap[val] || val;
+    document.querySelectorAll('#algo-table tbody tr').forEach(function(tr) {
+        var nom = (tr.dataset.algoNom || '').toLowerCase();
+        if (key && nom.indexOf(key) !== -1) {
+            tr.style.background = '#fff3cd';
+            tr.style.outline = '2px solid #FF7900';
+        } else if (tr.dataset.algoNom && tr.dataset.algoNom.indexOf('prophet') !== -1) {
+            tr.style.background = '#fff8f0';
+            tr.style.outline = '';
+        } else {
+            tr.style.background = '';
+            tr.style.outline = '';
+        }
+    });
+    /* Recharge les KPIs et le graphique avec les données du nouvel algorithme */
+    loadPredictionData();
+}
+
+function applyFilters() { loadPredictionData(); }
+function resetFilters() {
+    ['f-periode','f-canal','f-famille','f-categorie','f-cible'].forEach(function(id){
+        var el = document.getElementById(id); if (el) el.value = '';
+    });
+    var algo = document.getElementById('f-algo');
+    if (algo) algo.value = 'prophet';
+    highlightAlgo('prophet');
+    loadStandardFilters(loadPredictionData);
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+    loadStandardFilters(loadPredictionData); /* charge filtres puis lance la donnee */
+    highlightAlgo('prophet');
+    if (window.queueAI) {
+        window.queueAI('/api/interpret/prediction-global', 'ai-pred-global-text');
+    }
+});
+</script>
+{% endblock %}

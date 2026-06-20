@@ -1,0 +1,170 @@
+{% extends "base.html" %}
+{% block title %}Accueil Data Quality — Orange Tunisie{% endblock %}
+
+{% block content %}
+<div class="dashboard-pro" style="padding:24px 32px; max-width:1200px; margin:0 auto;">
+
+  <!-- ===== BANNIERE BIENVENUE ===== -->
+  <div style="background:#FFFFFF; border-left:4px solid var(--section-dataquality, #E53935);
+              border-radius:0 8px 8px 0; padding:24px 32px; margin-bottom:32px;
+              display:flex; justify-content:space-between; align-items:center;
+              box-shadow:0 1px 4px rgba(0,0,0,0.06);">
+    <div>
+      <p style="font-size:11px; letter-spacing:1.5px; font-weight:700;
+                color:#E53935; text-transform:uppercase; margin:0 0 6px 0;">
+        Orange Tunisie — Plateforme Data Quality
+      </p>
+      <h1 style="font-family:'Helvetica Neue',Arial,sans-serif; font-size:26px;
+                 font-weight:700; color:#1A1A1A; margin:0 0 4px 0;">
+        Bienvenue, {{ session.get('nom_complet', 'Data Engineer') }}
+      </h1>
+      <p style="font-size:13px; color:#6B6B6B; margin:0;">
+        <span id="dq-date">{{ now }}</span>
+      </p>
+    </div>
+    <div style="text-align:right; flex-shrink:0;">
+      <div style="background:#F5F5F5; border-radius:8px; padding:10px 16px;">
+        <div style="font-size:10px; color:#9B9B9B; text-transform:uppercase;
+                    letter-spacing:1px; margin-bottom:2px;">Derniere connexion</div>
+        <div style="font-size:12px; font-weight:600; color:#1A1A1A;">
+          {{ session.get('last_login_str', 'Premiere visite') }}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== ACCES RAPIDE ===== -->
+  <p style="font-size:11px; font-weight:700; color:#FF6600; letter-spacing:2px;
+            text-transform:uppercase; margin:0 0 16px 0;">Acces rapide</p>
+
+  <div style="display:grid; grid-template-columns:repeat(auto-fill, minmax(180px, 1fr)); gap:16px; margin-bottom:40px;">
+
+    <a href="{{ url_for('data_quality.vue_ensemble') }}"
+       style="display:block; background:#FFFFFF; border:1px solid #E5E5E5;
+              border-left:4px solid #E53935; border-radius:8px; padding:24px 20px;
+              text-decoration:none; transition:all 0.2s;"
+       onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.08)';"
+       onmouseout="this.style.transform='none'; this.style.boxShadow='none';">
+      <div style="font-family:'Helvetica Neue',Arial,sans-serif; font-size:16px;
+                  font-weight:700; color:#1A1A1A; margin-bottom:6px;">Vue d'ensemble</div>
+      <div style="font-size:12px; color:#6B6B6B;">Monitoring qualite globale</div>
+    </a>
+
+    <a href="{{ url_for('data_quality.tableau') }}"
+       style="display:block; background:#FFFFFF; border:1px solid #E5E5E5;
+              border-left:4px solid #2196F3; border-radius:8px; padding:24px 20px;
+              text-decoration:none; transition:all 0.2s;"
+       onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.08)';"
+       onmouseout="this.style.transform='none'; this.style.boxShadow='none';">
+      <div style="font-family:'Helvetica Neue',Arial,sans-serif; font-size:16px;
+                  font-weight:700; color:#1A1A1A; margin-bottom:6px;">Detail par table</div>
+      <div style="font-size:12px; color:#6B6B6B;">Analyse table par table</div>
+    </a>
+
+    <a href="{{ url_for('data_quality.alertes') }}"
+       style="display:block; background:#FFFFFF; border:1px solid #E5E5E5;
+              border-left:4px solid #FFA726; border-radius:8px; padding:24px 20px;
+              text-decoration:none; transition:all 0.2s;"
+       onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.08)';"
+       onmouseout="this.style.transform='none'; this.style.boxShadow='none';">
+      <div style="font-family:'Helvetica Neue',Arial,sans-serif; font-size:16px;
+                  font-weight:700; color:#1A1A1A; margin-bottom:6px;">Alertes</div>
+      <div style="font-size:12px; color:#6B6B6B;">Erreurs critiques actives</div>
+    </a>
+
+    <a href="{{ url_for('data_quality.explorateur') }}"
+       style="display:block; background:#FFFFFF; border:1px solid #E5E5E5;
+              border-left:4px solid #9C27B0; border-radius:8px; padding:24px 20px;
+              text-decoration:none; transition:all 0.2s;"
+       onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.08)';"
+       onmouseout="this.style.transform='none'; this.style.boxShadow='none';">
+      <div style="font-family:'Helvetica Neue',Arial,sans-serif; font-size:16px;
+                  font-weight:700; color:#1A1A1A; margin-bottom:6px;">Explorateur</div>
+      <div style="font-size:12px; color:#6B6B6B;">Naviguer dans les erreurs</div>
+    </a>
+
+    <a href="{{ url_for('data_quality.executions') }}"
+       style="display:block; background:#FFFFFF; border:1px solid #E5E5E5;
+              border-left:4px solid #E53935; border-radius:8px; padding:24px 20px;
+              text-decoration:none; transition:all 0.2s;"
+       onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.08)';"
+       onmouseout="this.style.transform='none'; this.style.boxShadow='none';">
+      <div style="font-family:'Helvetica Neue',Arial,sans-serif; font-size:16px;
+                  font-weight:700; color:#1A1A1A; margin-bottom:6px;">Historique</div>
+      <div style="font-size:12px; color:#6B6B6B;">Logs d'execution</div>
+    </a>
+
+    <a href="{{ url_for('data_quality.notifications') }}"
+       style="display:block; background:#FFFFFF; border:1px solid #E5E5E5;
+              border-left:4px solid #E53935; border-radius:8px; padding:24px 20px;
+              text-decoration:none; transition:all 0.2s;"
+       onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.08)';"
+       onmouseout="this.style.transform='none'; this.style.boxShadow='none';">
+      <div style="font-family:'Helvetica Neue',Arial,sans-serif; font-size:16px;
+                  font-weight:700; color:#1A1A1A; margin-bottom:6px;">Notifications</div>
+      <div style="font-size:12px; color:#6B6B6B;">Rapports par email</div>
+    </a>
+
+    <a href="{{ url_for('data_quality.pipeline') }}"
+       style="display:block; background:#FFFFFF; border:1px solid #E5E5E5;
+              border-left:4px solid #4CAF50; border-radius:8px; padding:24px 20px;
+              text-decoration:none; transition:all 0.2s;"
+       onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(0,0,0,0.08)';"
+       onmouseout="this.style.transform='none'; this.style.boxShadow='none';">
+      <div style="font-family:'Helvetica Neue',Arial,sans-serif; font-size:16px;
+                  font-weight:700; color:#1A1A1A; margin-bottom:6px;">Pipeline</div>
+      <div style="font-size:12px; color:#6B6B6B;">Etat des traitements ETL</div>
+    </a>
+
+  </div>
+
+  <!-- ===== APERCU GLOBAL ===== -->
+  <p style="font-size:11px; font-weight:700; color:#FF6600; letter-spacing:2px;
+            text-transform:uppercase; margin:0 0 16px 0;">Apercu global</p>
+
+  <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:16px;">
+
+    <div style="background:#FFFFFF; border:1px solid #E5E5E5; border-top:3px solid #E53935;
+                border-radius:8px; padding:16px 20px;">
+      <p style="font-size:11px; font-weight:600; color:#9B9B9B; text-transform:uppercase;
+                letter-spacing:1px; margin:0 0 4px 0;">Total erreurs</p>
+      <p style="font-size:28px; font-weight:700; color:#E53935; margin:0 0 2px 0;">
+        {{ "{:,}".format(total_errors).replace(",", " ") }}
+      </p>
+      <p style="font-size:12px; color:#6B6B6B; margin:0;">lignes detectees</p>
+    </div>
+
+    <div style="background:#FFFFFF; border:1px solid #E5E5E5; border-top:3px solid #2196F3;
+                border-radius:8px; padding:16px 20px;">
+      <p style="font-size:11px; font-weight:600; color:#9B9B9B; text-transform:uppercase;
+                letter-spacing:1px; margin:0 0 4px 0;">Fichiers</p>
+      <p style="font-size:28px; font-weight:700; color:#1A1A1A; margin:0 0 2px 0;">
+        {{ total_files }}
+      </p>
+      <p style="font-size:12px; color:#6B6B6B; margin:0;">rapports d'erreurs</p>
+    </div>
+
+    <div style="background:#FFFFFF; border:1px solid #E5E5E5; border-top:3px solid #FF6600;
+                border-radius:8px; padding:16px 20px;">
+      <p style="font-size:11px; font-weight:600; color:#9B9B9B; text-transform:uppercase;
+                letter-spacing:1px; margin:0 0 4px 0;">Tables</p>
+      <p style="font-size:28px; font-weight:700; color:#1A1A1A; margin:0 0 2px 0;">
+        {{ tables_with_err }} / {{ total_tables }}
+      </p>
+      <p style="font-size:12px; color:#6B6B6B; margin:0;">tables concernees</p>
+    </div>
+
+    <div style="background:#FFFFFF; border:1px solid #E5E5E5; border-top:3px solid #4CAF50;
+                border-radius:8px; padding:16px 20px;">
+      <p style="font-size:11px; font-weight:600; color:#9B9B9B; text-transform:uppercase;
+                letter-spacing:1px; margin:0 0 4px 0;">Logs</p>
+      <p style="font-size:28px; font-weight:700; color:#1A1A1A; margin:0 0 2px 0;">
+        {{ total_logs }}
+      </p>
+      <p style="font-size:12px; color:#6B6B6B; margin:0;">executions enregistrees</p>
+    </div>
+
+  </div>
+
+</div>
+{% endblock %}

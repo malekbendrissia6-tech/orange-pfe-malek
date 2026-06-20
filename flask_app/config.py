@@ -14,6 +14,9 @@ load_dotenv(PROJECT_ROOT / ".env")
 
 
 def _db_uri():
+    db_url = os.getenv("DATABASE_URL")
+    if db_url:
+        return db_url.replace("postgres://", "postgresql://", 1)
     return (
         f"postgresql+psycopg2://{os.getenv('DB_USER', 'postgres')}:"
         f"{os.getenv('DB_PASSWORD', '')}"
@@ -21,7 +24,6 @@ def _db_uri():
         f"{os.getenv('DB_PORT', '5432')}/"
         f"{os.getenv('DB_NAME', 'orange_dwh')}"
     )
-
 
 class Config:
     """Configuration de base partagee."""
